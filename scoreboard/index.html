@@ -128,21 +128,23 @@
     let localShooters = [];
 
     // ── Подсчёт пар ───────────────────────────────────────────
+    // Пара = щит 1+2, щит 3+4, щит 5+6 и т.д. (до 10 пар = 20 щитов)
     function buildRanking(shooters) {
-      const byTarget = {};
+      const byPair = {};
       for (const s of shooters) {
-        if (!byTarget[s.target]) byTarget[s.target] = [];
-        byTarget[s.target].push(s);
+        const pairIdx = Math.floor((s.target - 1) / 2);
+        if (!byPair[pairIdx]) byPair[pairIdx] = [];
+        byPair[pairIdx].push(s);
       }
-      return Object.entries(byTarget)
-        .map(([target, members]) => {
-          members.sort((a, b) => a.position - b.position);
+      return Object.entries(byPair)
+        .map(([pairIdx, members]) => {
+          members.sort((a, b) => a.target - b.target);
           const total = members.reduce((sum, m) => {
             return sum + [m.s1, m.s2, m.s3, m.s4, m.s5, m.s6]
               .reduce((a, v) => a + (v != null ? parseFloat(v) : 0), 0);
           }, 0);
           return {
-            target: +target,
+            pairIdx: +pairIdx,
             names: members.map(m => m.name).join(' / '),
             total: Math.round(total * 10) / 10
           };

@@ -14,7 +14,6 @@
       min-height: 100vh;
     }
 
-    /* ── Шапка ── */
     header {
       background: #111;
       color: #fff;
@@ -22,9 +21,10 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 16px;
     }
     header h1 { font-size: 1.1rem; letter-spacing: 2px; }
-    header .meta { font-size: 0.8rem; color: #666; }
+    header .meta { font-size: 0.8rem; color: #666; flex: 1; }
 
     button {
       cursor: pointer;
@@ -35,25 +35,24 @@
       font-weight: 600;
     }
     .btn-primary { background: #FFD700; color: #111; }
-    .btn-danger  { background: #c0392b; color: #fff; font-size: 0.8rem; padding: 6px 14px; }
-    .btn-ghost   { background: transparent; color: #aaa; border: 1px solid #333; }
+    .btn-ghost   { background: transparent; color: #aaa; border: 1px solid #555; }
 
-    /* ── Заблокировано ── */
     #blocked {
       display: flex; flex-direction: column;
       align-items: center; justify-content: center;
       height: 80vh; gap: 12px; color: #888;
     }
     #blocked h2 { font-size: 1.2rem; }
-    #blocked p  { font-size: 0.85rem; }
 
-    /* ── Модал настройки соревнования ── */
+    /* ── Модал ── */
     #modal-overlay {
       display: none;
       position: fixed; inset: 0;
       background: rgba(0,0,0,0.6);
       z-index: 100;
-      align-items: center; justify-content: center;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 40px;
     }
     #modal-overlay.visible { display: flex; }
 
@@ -61,14 +60,13 @@
       background: #fff;
       border-radius: 12px;
       padding: 28px;
-      width: 480px;
+      width: 360px;
       max-width: 95vw;
-      max-height: 90vh;
+      max-height: 85vh;
       overflow-y: auto;
     }
-    #modal h2 { margin-bottom: 20px; font-size: 1.1rem; }
+    #modal h2 { margin-bottom: 16px; font-size: 1.05rem; }
 
-    /* Таблица ввода участников */
     #setup-table {
       width: 100%;
       border-collapse: collapse;
@@ -77,42 +75,48 @@
     }
     #setup-table th {
       text-align: left;
-      color: #888;
+      color: #999;
       font-weight: 500;
-      padding: 4px 8px;
-      border-bottom: 1px solid #eee;
-      font-size: 0.78rem;
+      padding: 4px 8px 8px;
+      font-size: 0.75rem;
       text-transform: uppercase;
       letter-spacing: 1px;
     }
-    #setup-table td { padding: 3px 4px; }
-    #setup-table input {
+    #setup-table td { padding: 2px 4px; }
+    #setup-table .target-cell {
+      text-align: center;
+      color: #bbb;
+      font-size: 0.82rem;
+      width: 50px;
+      padding: 6px 4px;
+    }
+    #setup-table input[type="text"] {
       width: 100%;
-      border: 1px solid #ddd;
+      border: 1px solid #e0e0e0;
       border-radius: 4px;
       padding: 7px 10px;
       font-size: 0.9rem;
       outline: none;
     }
-    #setup-table input:focus { border-color: #FFD700; }
-    #setup-table .sep td {
-      background: #f9f9f9;
-      height: 6px;
+    #setup-table input[type="text"]:focus { border-color: #FFD700; }
+    #setup-table tr.sep td {
+      height: 8px;
+      background: #f5f5f5;
       padding: 0;
     }
 
     .modal-actions {
-      display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;
+      display: flex; gap: 10px; justify-content: flex-end;
     }
 
-    /* ── Основная сетка ── */
+    /* ── Основное ── */
     #main { padding: 24px; }
 
     #error-box {
       background: #fff0f0;
       border: 1px solid #f5c6c6;
       border-radius: 8px;
-      padding: 20px 24px;
+      padding: 16px 20px;
       color: #c0392b;
       margin-bottom: 20px;
       font-size: 0.9rem;
@@ -120,7 +124,9 @@
     }
 
     #loading {
-      text-align: center; padding: 60px 0; color: #aaa; font-size: 0.9rem;
+      text-align: center; padding: 60px 0;
+      color: #aaa; font-size: 0.9rem;
+      display: none;
     }
 
     #no-competition {
@@ -128,19 +134,18 @@
     }
     #no-competition p { margin-bottom: 20px; }
 
-    /* Таблица результатов */
+    /* ── Таблица результатов ── */
     #scoring-wrap { overflow-x: auto; }
 
     #scoring-table {
       border-collapse: collapse;
       font-size: 0.9rem;
-      min-width: 600px;
+      min-width: 560px;
       background: #fff;
       border-radius: 8px;
       overflow: hidden;
       box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
-
     #scoring-table th {
       background: #111;
       color: #aaa;
@@ -148,77 +153,43 @@
       text-align: center;
       font-size: 0.75rem;
       letter-spacing: 1px;
-      font-weight: 500;
     }
     #scoring-table th.left { text-align: left; }
+    #scoring-table td { padding: 0; border-bottom: 1px solid #f0f0f0; }
 
-    #scoring-table td {
-      padding: 0;
-      border-bottom: 1px solid #f0f0f0;
-    }
-
-    #scoring-table .td-target {
+    .td-target {
       text-align: center; width: 52px;
       color: #888; font-size: 0.85rem;
       background: #fafafa;
     }
-    #scoring-table .td-name {
-      padding: 0 14px;
-      font-weight: 500;
-      white-space: nowrap;
-      background: #fafafa;
+    .td-target span { display: block; padding: 11px 0; }
+    .td-name { background: #fafafa; }
+    .td-name span { display: block; padding: 11px 14px; font-weight: 500; }
+    .td-total {
+      text-align: center; width: 70px;
+      font-weight: 700; background: #f6f6f6;
     }
-    #scoring-table .td-total {
-      text-align: center;
-      width: 70px;
-      font-weight: 700;
-      color: #111;
-      background: #f6f6f6;
-    }
+    .td-total span { display: block; padding: 11px 0; }
 
-    /* Ячейка серии */
-    #scoring-table .cell-series input {
-      width: 72px;
-      border: none;
-      text-align: center;
-      padding: 11px 6px;
-      font-size: 0.95rem;
-      outline: none;
-      background: transparent;
-      color: #111;
+    .cell-series input {
+      width: 72px; border: none;
+      text-align: center; padding: 11px 6px;
+      font-size: 0.95rem; outline: none;
+      background: transparent; color: #111;
     }
-    #scoring-table .cell-series input:focus {
+    .cell-series input:focus {
       background: #fffbe6;
       outline: 2px solid #FFD700;
       outline-offset: -2px;
       border-radius: 3px;
     }
-    #scoring-table .cell-series input.saved {
-      color: #111;
-    }
-    #scoring-table .cell-series input.unsaved {
-      color: #e67e22;
-    }
+    .cell-series input.unsaved { color: #e67e22; }
 
-    /* Разделитель пар */
-    tr.pair-sep td {
-      height: 4px;
-      background: #f0f0f0;
-      padding: 0;
-    }
-
-    /* Итоговая строка */
-    .td-target span, .td-name span {
-      display: block;
-      padding: 11px 14px 11px 0;
-    }
-    .td-target span { padding: 11px 0; }
+    tr.pair-sep td { height: 6px; background: #ececec; padding: 0; }
 
     #save-status {
-      text-align: right;
-      font-size: 0.78rem;
-      color: #aaa;
-      margin-top: 8px;
+      text-align: right; font-size: 0.78rem;
+      color: #aaa; margin-top: 8px;
     }
     #save-status.saving { color: #e67e22; }
     #save-status.ok     { color: #27ae60; }
@@ -227,33 +198,29 @@
 </head>
 <body>
 
-<!-- Шапка -->
 <header>
   <h1>MUSHKETON · СУДЬЯ</h1>
-  <div class="meta" id="comp-info">—</div>
+  <div class="meta" id="comp-info"></div>
   <button class="btn-primary" id="btn-new" style="display:none">+ Новое соревнование</button>
 </header>
 
-<!-- Нет токена -->
 <div id="blocked" style="display:none">
   <h2>🔒 Доступ закрыт</h2>
-  <p>Откройте страницу по ссылке судьи (со знаком ? в адресе)</p>
+  <p>Откройте страницу по ссылке судьи (со знаком ?token= в адресе)</p>
 </div>
 
-<!-- Модал: ввод участников -->
+<!-- Модал: список участников -->
 <div id="modal-overlay">
   <div id="modal">
-    <h2>Новое соревнование</h2>
+    <h2>Участники соревнования</h2>
     <table id="setup-table">
       <thead>
         <tr>
-          <th style="width:70px">Щит</th>
+          <th style="width:50px">Щит</th>
           <th>Фамилия</th>
         </tr>
       </thead>
-      <tbody id="setup-body">
-        <!-- строки добавляются динамически -->
-      </tbody>
+      <tbody id="setup-body"></tbody>
     </table>
     <div class="modal-actions">
       <button class="btn-ghost" id="btn-cancel-setup">Отмена</button>
@@ -262,9 +229,7 @@
   </div>
 </div>
 
-<!-- Основное содержимое -->
 <div id="main">
-
   <div id="error-box"></div>
   <div id="loading">Подключение...</div>
 
@@ -277,31 +242,25 @@
     <div id="scoring-wrap">
       <table id="scoring-table">
         <thead>
-          <tr id="scoring-head">
-            <th class="left" style="width:52px">Щит</th>
-            <th class="left">Фамилия</th>
-            <!-- серии добавляются динамически -->
-            <th>Σ</th>
-          </tr>
+          <tr id="scoring-head"></tr>
         </thead>
         <tbody id="scoring-body"></tbody>
       </table>
     </div>
     <div id="save-status"></div>
   </div>
-
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
-// ─── Конфиг ────────────────────────────────────────────────────────────────
+// ─── Конфиг ────────────────────────────────────────────────
 const SUPABASE_URL      = 'https://dqtwattqjzeukyxpnicj.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_ZyCG0DMsiFZYnPRmNcup1g_vgVQnXwv';
-// ───────────────────────────────────────────────────────────────────────────
+// ───────────────────────────────────────────────────────────
 
 const { createClient } = supabase;
 
-// ── Токен из URL ─────────────────────────────────────────────────────────
+// ── Токен из URL ─────────────────────────────────────────
 const token = new URLSearchParams(location.search).get('token');
 
 if (!token) {
@@ -311,20 +270,19 @@ if (!token) {
   throw new Error('No token');
 }
 
-// Клиент с токеном в заголовке
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   global: { headers: { 'x-judge-token': token } }
 });
 
-// ── Состояние ────────────────────────────────────────────────────────────
-let competition  = null;
-let shooters     = [];          // [{id, target, name, position, s1..s6}]
-let seriesCount  = 6;           // сколько колонок серий показывать
-let focusedInput = null;
+let competition = null;
+let shooters    = [];
+let seriesCount = 3;
 
-// ── Инициализация ────────────────────────────────────────────────────────
+// ── Инициализация ─────────────────────────────────────────
 async function init() {
-  document.getElementById('loading').style.display = 'block';
+  const loading = document.getElementById('loading');
+  const errBox  = document.getElementById('error-box');
+  loading.style.display = 'block';
 
   const { data: comps, error } = await db
     .from('competitions')
@@ -333,12 +291,11 @@ async function init() {
     .order('date', { ascending: false })
     .limit(1);
 
-  document.getElementById('loading').style.display = 'none';
+  loading.style.display = 'none';
 
   if (error) {
-    const box = document.getElementById('error-box');
-    box.textContent = 'Ошибка подключения к базе данных: ' + error.message;
-    box.style.display = 'block';
+    errBox.textContent = 'Ошибка подключения к базе данных: ' + error.message;
+    errBox.style.display = 'block';
     return;
   }
 
@@ -346,7 +303,6 @@ async function init() {
 
   if (!comps || comps.length === 0) {
     document.getElementById('no-competition').style.display = 'block';
-    document.getElementById('scoring-section').style.display = 'none';
     return;
   }
 
@@ -359,121 +315,102 @@ async function loadShooters() {
     .from('shooters')
     .select('*')
     .eq('competition_id', competition.id)
-    .order('target')
-    .order('position');
+    .order('target');
 
-  if (error) { showStatus('Ошибка загрузки: ' + error.message, 'error'); return; }
+  if (error) {
+    showStatus('Ошибка загрузки: ' + error.message, 'error');
+    return;
+  }
 
   shooters = data || [];
 
-  document.getElementById('no-competition').style.display = 'none';
-  document.getElementById('scoring-section').style.display = 'block';
-
   const d = new Date(competition.date + 'T00:00:00');
   document.getElementById('comp-info').textContent =
-    d.toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' });
+    d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+
+  document.getElementById('no-competition').style.display  = 'none';
+  document.getElementById('scoring-section').style.display = 'block';
 
   renderScoring();
 }
 
-// ── Рендер таблицы результатов ───────────────────────────────────────────
+// ── Таблица результатов ───────────────────────────────────
+// Пары: щит 1+2, щит 3+4, щит 5+6 ... до щит 19+20
 function renderScoring() {
-  if (!shooters.length) return;
-
-  // Определить сколько серий есть в данных
   const used = ['s1','s2','s3','s4','s5','s6'].filter(k =>
     shooters.some(s => s[k] != null)
   );
-  // Показываем минимум 3 серии, максимум 6, всегда +1 пустая для ввода
   seriesCount = Math.min(6, Math.max(3, used.length + 1));
 
-  // Заголовок
   const head = document.getElementById('scoring-head');
-  head.innerHTML = '<th class="left" style="width:52px">Щит</th><th class="left">Фамилия</th>';
-  for (let i = 1; i <= seriesCount; i++) {
+  head.innerHTML =
+    '<th class="left" style="width:52px">Щит</th>' +
+    '<th class="left">Фамилия</th>';
+  for (let i = 1; i <= seriesCount; i++)
     head.innerHTML += `<th>С${i}</th>`;
-  }
   head.innerHTML += '<th>Σ</th>';
 
-  // Сгруппировать по щиту
-  const byTarget = {};
-  for (const s of shooters) {
-    if (!byTarget[s.target]) byTarget[s.target] = [];
-    byTarget[s.target].push(s);
-  }
-  const targets = Object.keys(byTarget).map(Number).sort((a, b) => a - b);
-
-  const tbody = document.getElementById('scoring-body');
+  const sorted = [...shooters].sort((a, b) => a.target - b.target);
+  const tbody  = document.getElementById('scoring-body');
   tbody.innerHTML = '';
 
-  targets.forEach((target, tIdx) => {
-    const pair = byTarget[target].sort((a, b) => a.position - b.position);
-
-    // Разделитель между парами
-    if (tIdx > 0) {
+  sorted.forEach((shooter, idx) => {
+    // Разделитель перед нечётным щитом (кроме первого)
+    if (idx > 0 && shooter.target % 2 === 1) {
       const sep = tbody.insertRow();
       sep.className = 'pair-sep';
       sep.insertCell().colSpan = 2 + seriesCount + 1;
     }
 
-    pair.forEach(shooter => {
-      const tr = tbody.insertRow();
-      tr.dataset.id = shooter.id;
+    const tr = tbody.insertRow();
+    tr.dataset.id = shooter.id;
 
-      // Щит
-      const tdTarget = tr.insertCell();
-      tdTarget.className = 'td-target';
-      tdTarget.innerHTML = `<span>${shooter.target}</span>`;
+    const tdT = tr.insertCell();
+    tdT.className = 'td-target';
+    tdT.innerHTML = `<span>${shooter.target}</span>`;
 
-      // Фамилия
-      const tdName = tr.insertCell();
-      tdName.className = 'td-name';
-      tdName.innerHTML = `<span>${esc(shooter.name)}</span>`;
+    const tdN = tr.insertCell();
+    tdN.className = 'td-name';
+    tdN.innerHTML = `<span>${esc(shooter.name)}</span>`;
 
-      // Серии
-      for (let i = 1; i <= seriesCount; i++) {
-        const key = 's' + i;
-        const val = shooter[key];
-        const td = tr.insertCell();
-        td.className = 'cell-series';
-        const inp = document.createElement('input');
-        inp.type = 'text';
-        inp.inputMode = 'decimal';
-        inp.dataset.id  = shooter.id;
-        inp.dataset.key = key;
-        inp.value = val != null ? val : '';
-        inp.className = val != null ? 'saved' : '';
-        inp.addEventListener('focus', onFocus);
-        inp.addEventListener('blur',  onBlur);
-        inp.addEventListener('input', onInput);
-        inp.addEventListener('keydown', onKeyDown);
-        td.appendChild(inp);
-      }
+    for (let i = 1; i <= seriesCount; i++) {
+      const key = 's' + i;
+      const val = shooter[key];
+      const td  = tr.insertCell();
+      td.className = 'cell-series';
+      const inp = document.createElement('input');
+      inp.type = 'text';
+      inp.inputMode = 'decimal';
+      inp.dataset.id  = shooter.id;
+      inp.dataset.key = key;
+      inp.value = val != null ? val : '';
+      if (val != null) inp.classList.add('saved');
+      inp.addEventListener('focus',   onFocus);
+      inp.addEventListener('blur',    onBlur);
+      inp.addEventListener('input',   onInput);
+      inp.addEventListener('keydown', onKeyDown);
+      td.appendChild(inp);
+    }
 
-      // Итого
-      const tdTotal = tr.insertCell();
-      tdTotal.className = 'td-total';
-      tdTotal.id = 'total-' + shooter.id;
-      tdTotal.textContent = calcTotal(shooter) || '—';
-    });
+    const tdTotal = tr.insertCell();
+    tdTotal.className = 'td-total';
+    tdTotal.id = 'total-' + shooter.id;
+    tdTotal.innerHTML = `<span>${calcTotal(shooter) || '—'}</span>`;
   });
 }
 
-function calcTotal(shooter) {
+function calcTotal(s) {
   let sum = 0, any = false;
   for (let i = 1; i <= 6; i++) {
-    const v = shooter['s' + i];
+    const v = s['s' + i];
     if (v != null) { sum += parseFloat(v); any = true; }
   }
   return any ? (Math.round(sum * 10) / 10).toFixed(1) : null;
 }
 
-// ── Обработчики ячеек ────────────────────────────────────────────────────
-function onFocus(e) { focusedInput = e.target; }
-
-function onInput(e) {
-  e.target.className = 'unsaved';
-}
+// ── Ячейки ────────────────────────────────────────────────
+function onFocus() {}
+function onInput(e) { e.target.classList.add('unsaved'); }
 
 async function onBlur(e) {
   const inp = e.target;
@@ -481,94 +418,78 @@ async function onBlur(e) {
   const id  = inp.dataset.id;
   const key = inp.dataset.key;
 
-  if (raw === '') {
-    await saveCell(id, key, null);
-    inp.className = '';
-    return;
-  }
-  const val = parseFloat(raw);
-  if (isNaN(val)) { inp.value = ''; inp.className = ''; return; }
+  const val = raw === '' ? null : parseFloat(raw);
+  if (raw !== '' && isNaN(val)) { inp.value = ''; inp.classList.remove('unsaved'); return; }
 
-  inp.value = val;
+  inp.value = val != null ? val : '';
   await saveCell(id, key, val);
-  inp.className = 'saved';
+  inp.classList.remove('unsaved');
 }
 
 async function saveCell(id, key, value) {
   showStatus('Сохранение...', 'saving');
-  const update = { [key]: value };
-  const { error } = await db.from('shooters').update(update).eq('id', id);
-  if (error) {
-    showStatus('Ошибка: ' + error.message, 'error');
-    return;
-  }
-  // Обновить локально
+  const { error } = await db.from('shooters').update({ [key]: value }).eq('id', id);
+  if (error) { showStatus('Ошибка: ' + error.message, 'error'); return; }
+
   const s = shooters.find(x => x.id === id);
   if (s) {
     s[key] = value;
-    const totalEl = document.getElementById('total-' + id);
-    if (totalEl) totalEl.textContent = calcTotal(s) || '—';
+    const el = document.getElementById('total-' + id);
+    if (el) el.innerHTML = `<span>${calcTotal(s) || '—'}</span>`;
   }
-  showStatus('Сохранено', 'ok');
+  showStatus('Сохранено ✓', 'ok');
   setTimeout(() => showStatus('', ''), 1500);
 }
 
-// ── Навигация клавиатурой ────────────────────────────────────────────────
+// ── Навигация ─────────────────────────────────────────────
 function onKeyDown(e) {
-  const inp = e.target;
-  const key = e.key;
-
-  if (key === 'Enter' || key === 'Tab') {
-    e.preventDefault();
-    moveFocus(inp, e.shiftKey ? -1 : +1);
-    return;
-  }
-
-  if (key === 'ArrowRight') { moveFocus(inp, +1); return; }
-  if (key === 'ArrowLeft')  { moveFocus(inp, -1); return; }
-  if (key === 'ArrowDown')  { moveFocusVertical(inp, +1); return; }
-  if (key === 'ArrowUp')    { moveFocusVertical(inp, -1); return; }
+  if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
+    e.preventDefault(); moveFocus(e.target, +1);
+  } else if (e.key === 'Tab' && e.shiftKey) {
+    e.preventDefault(); moveFocus(e.target, -1);
+  } else if (e.key === 'ArrowRight') { moveFocus(e.target, +1); }
+    else if (e.key === 'ArrowLeft')  { moveFocus(e.target, -1); }
+    else if (e.key === 'ArrowDown')  { moveFocusVertical(e.target, +1); }
+    else if (e.key === 'ArrowUp')    { moveFocusVertical(e.target, -1); }
 }
 
 function allInputs() {
-  return Array.from(document.querySelectorAll('#scoring-body input[data-key]'));
+  return [...document.querySelectorAll('#scoring-body input[data-key]')];
 }
 
-function moveFocus(inp, delta) {
-  const inputs = allInputs();
-  const idx = inputs.indexOf(inp);
-  const next = inputs[idx + delta];
+function moveFocus(inp, d) {
+  const list = allInputs(), i = list.indexOf(inp);
+  const next = list[i + d];
   if (next) { inp.blur(); next.focus(); next.select(); }
 }
 
-function moveFocusVertical(inp, delta) {
-  // Найти input в той же колонке на строку выше/ниже
-  const key = inp.dataset.key;
-  const sameKey = allInputs().filter(x => x.dataset.key === key);
-  const idx = sameKey.indexOf(inp);
-  const next = sameKey[idx + delta];
+function moveFocusVertical(inp, d) {
+  const key  = inp.dataset.key;
+  const col  = allInputs().filter(x => x.dataset.key === key);
+  const i    = col.indexOf(inp);
+  const next = col[i + d];
   if (next) { inp.blur(); next.focus(); next.select(); }
 }
 
-// ── Статус ────────────────────────────────────────────────────────────────
 function showStatus(msg, cls) {
   const el = document.getElementById('save-status');
   el.textContent = msg;
   el.className = cls;
 }
 
-// ── Модал: Новое соревнование ────────────────────────────────────────────
+// ── Модал: ввод участников ────────────────────────────────
+// 10 пар = 20 щитов. Пара: щит 1+2, щит 3+4, ...
 function openSetupModal() {
   const tbody = document.getElementById('setup-body');
   tbody.innerHTML = '';
-  // Начинаем с 4 стрелков (2 пары) — легко добавить ещё
-  for (let i = 0; i < 4; i++) addSetupRow(i);
+  for (let i = 0; i < 20; i++) addSetupRow(i);
   document.getElementById('modal-overlay').classList.add('visible');
-  tbody.querySelector('input[data-col="target"]').focus();
+  tbody.querySelector('input[data-col="name"]').focus();
 }
 
 function addSetupRow(idx) {
-  const tbody = document.getElementById('setup-body');
+  const tbody     = document.getElementById('setup-body');
+  const targetNum = idx + 1;
 
   // Разделитель между парами
   if (idx > 0 && idx % 2 === 0) {
@@ -578,134 +499,83 @@ function addSetupRow(idx) {
   }
 
   const tr = tbody.insertRow();
-  tr.dataset.idx = idx;
 
   const tdTarget = tr.insertCell();
-  const inpTarget = document.createElement('input');
-  inpTarget.type = 'text';
-  inpTarget.inputMode = 'numeric';
-  inpTarget.placeholder = 'щит';
-  inpTarget.dataset.col = 'target';
-  inpTarget.dataset.row = idx;
-  tdTarget.appendChild(inpTarget);
+  tdTarget.className = 'target-cell';
+  tdTarget.textContent = targetNum;
 
   const tdName = tr.insertCell();
-  const inpName = document.createElement('input');
-  inpName.type = 'text';
-  inpName.placeholder = 'фамилия';
-  inpName.dataset.col = 'name';
-  inpName.dataset.row = idx;
-  tdName.appendChild(inpName);
+  const inp    = document.createElement('input');
+  inp.type = 'text';
+  inp.placeholder = 'фамилия';
+  inp.dataset.col    = 'name';
+  inp.dataset.row    = String(idx);
+  inp.dataset.target = String(targetNum);
+  tdName.appendChild(inp);
 
-  // Enter в последней строке — добавить ещё пару
-  inpName.addEventListener('keydown', e => {
+  inp.addEventListener('keydown', e => {
     if (e.key === 'Enter') {
       e.preventDefault();
-      const rows = tbody.querySelectorAll('tr:not(.sep)');
-      const isLast = parseInt(inpName.dataset.row) === rows.length - 1;
-      if (isLast) {
-        const count = rows.length;
-        addSetupRow(count);
-        addSetupRow(count + 1);
-      }
-      // Перейти к следующей строке
-      const next = tbody.querySelector(`input[data-col="target"][data-row="${idx + 1}"]`);
+      const next = tbody.querySelector(`input[data-row="${idx + 1}"]`);
       if (next) next.focus();
     }
   });
 }
 
 document.getElementById('btn-new').addEventListener('click', openSetupModal);
-document.getElementById('btn-new2')?.addEventListener('click', openSetupModal);
-document.getElementById('btn-cancel-setup').addEventListener('click', () => {
-  document.getElementById('modal-overlay').classList.remove('visible');
-});
+document.getElementById('btn-new2').addEventListener('click', openSetupModal);
+document.getElementById('btn-cancel-setup').addEventListener('click', () =>
+  document.getElementById('modal-overlay').classList.remove('visible'));
 
 document.getElementById('btn-start').addEventListener('click', async () => {
-  // Собрать данные из формы
-  const rows = document.querySelectorAll('#setup-body tr:not(.sep)');
+  const inputs  = document.querySelectorAll('#setup-body input[data-col="name"]');
   const entries = [];
-
-  rows.forEach((tr, i) => {
-    const t = tr.querySelector('input[data-col="target"]')?.value.trim();
-    const n = tr.querySelector('input[data-col="name"]')?.value.trim();
-    if (t && n) entries.push({ target: parseInt(t), name: n, idx: i });
+  inputs.forEach(inp => {
+    const n = inp.value.trim();
+    if (n) entries.push({ target: parseInt(inp.dataset.target), name: n });
   });
 
-  if (entries.length < 2) {
-    alert('Введите хотя бы двух участников'); return;
-  }
+  if (entries.length < 2) { alert('Введите хотя бы двух участников'); return; }
 
-  document.getElementById('btn-start').disabled = true;
-  document.getElementById('btn-start').textContent = 'Создаём...';
+  const btn = document.getElementById('btn-start');
+  btn.disabled = true; btn.textContent = 'Создаём...';
 
-  // Деактивировать предыдущие соревнования
   await db.from('competitions').update({ is_active: false }).eq('is_active', true);
 
-  // Создать новое соревнование
-  const { data: compData, error: compErr } = await db
+  const { data: comp, error: ce } = await db
     .from('competitions')
     .insert({ date: new Date().toISOString().slice(0, 10), is_active: true })
-    .select()
-    .single();
+    .select().single();
 
-  if (compErr) {
-    alert('Ошибка создания соревнования: ' + compErr.message);
-    document.getElementById('btn-start').disabled = false;
-    document.getElementById('btn-start').textContent = 'Старт →';
-    return;
-  }
+  if (ce) { alert('Ошибка: ' + ce.message); btn.disabled = false; btn.textContent = 'Старт →'; return; }
 
-  competition = compData;
+  competition = comp;
 
-  // Сгруппировать по щиту чтобы определить position
-  const byTarget = {};
-  entries.forEach(e => {
-    if (!byTarget[e.target]) byTarget[e.target] = [];
-    byTarget[e.target].push(e);
-  });
+  const toInsert = entries.map(e => ({
+    competition_id: comp.id,
+    target:   e.target,
+    name:     e.name,
+    position: 1
+  }));
 
-  const toInsert = [];
-  Object.entries(byTarget).forEach(([target, members]) => {
-    members.forEach((m, i) => {
-      toInsert.push({
-        competition_id: competition.id,
-        target: parseInt(target),
-        name: m.name,
-        position: i + 1
-      });
-    });
-  });
-
-  const { error: shooterErr } = await db.from('shooters').insert(toInsert);
-
-  if (shooterErr) {
-    alert('Ошибка добавления участников: ' + shooterErr.message);
-    document.getElementById('btn-start').disabled = false;
-    document.getElementById('btn-start').textContent = 'Старт →';
-    return;
-  }
+  const { error: se } = await db.from('shooters').insert(toInsert);
+  if (se) { alert('Ошибка: ' + se.message); btn.disabled = false; btn.textContent = 'Старт →'; return; }
 
   document.getElementById('modal-overlay').classList.remove('visible');
-  document.getElementById('btn-start').disabled = false;
-  document.getElementById('btn-start').textContent = 'Старт →';
-
+  btn.disabled = false; btn.textContent = 'Старт →';
   await loadShooters();
 });
 
-// ── Esc закрывает модал ──────────────────────────────────────────────────
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape')
     document.getElementById('modal-overlay').classList.remove('visible');
 });
 
-// ── Утилиты ──────────────────────────────────────────────────────────────
 function esc(str) {
   return str.replace(/[&<>"']/g, c =>
-    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
 
-// ── Запуск ───────────────────────────────────────────────────────────────
 init();
 </script>
 </body>
