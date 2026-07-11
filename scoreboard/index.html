@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mushketon — Scoreboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      color: #fff;
+      font-family: 'Courier New', monospace;
+      min-height: 100vh;
+      padding: 48px 32px;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 2.4rem;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    #comp-date {
+      text-align: center;
+      color: #555;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      margin-bottom: 48px;
+    }
+
+    table {
+      width: 100%;
+      max-width: 720px;
+      margin: 0 auto;
+      border-collapse: collapse;
+    }
+
+    thead th {
+      color: #444;
+      text-align: left;
+      padding: 8px 20px;
+      font-size: 0.75rem;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    thead th.right { text-align: right; }
+
+    tbody tr {
+      border-bottom: 1px solid #0d0d0d;
+      transition: color 0.4s ease;
+    }
+
+    tbody td {
+      padding: 16px 20px;
+      font-size: 1.3rem;
+    }
+
+    td.place {
+      color: #333;
+      width: 50px;
+      font-size: 1rem;
+    }
+
+    td.total {
+      text-align: right;
+      font-weight: bold;
+      width: 100px;
+    }
+
+    tr.leader { color: #FFD700; }
+    tr.leader td.place { color: #a08800; }
+
+    .empty {
+      text-align: center;
+      color: #2a2a2a;
+      padding: 80px 0;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+    }
+
+    #dot {
+      position: fixed;
+      bottom: 18px;
+      right: 22px;
+      font-size: 0.7rem;
+      color: #1a1a1a;
+      letter-spacing: 1px;
+    }
+    #dot.live  { color: #1a3a1a; }
+    #dot.error { color: #3a1a1a; }
+  </style>
+</head>
+<body>
+
+  <h1>Mushketon</h1>
+  <div id="comp-date">—</div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Пара</th>
+        <th class="right">Итого</th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <tr><td colspan="3" class="empty">ОЖИДАНИЕ ДАННЫХ</td></tr>
+    </tbody>
+  </table>
+
+  <div id="dot">●</div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    // ─── Конфиг ───────────────────────────────────────────────
+    const SUPABASE_URL      = 'REPLACE_WITH_YOUR_SUPABASE_URL';
+    const SUPABASE_ANON_KEY = 'REPLACE_WITH_YOUR_SUPABASE_ANON_KEY';
+    // ──────────────────────────────────────────────────────────
+
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let localShooters = [];
+
+    // ── Подсчёт пар ───────────────────────────────────────────
+    function buildRanking(shooters) {
+      const byTarget = {};
+      for (const s of shooters) {
+        if (!byTarget[s.target]) byTarget[s.target] = [];
+        byTarget[s.target].push(s);
+      }
+      return Object.entries(byTarget)
+        .map(([target, members]) => {
+          members.sort((a, b) => a.position - b.position);
+          const total = members.reduce((sum, m) => {
+            return sum + [m.s1, m.s2, m.s3, m.s4, m.s5, m.s6]
+              .reduce((a, v) => a + (v != null ? parseFloat(v) : 0), 0);
+          }, 0);
+          return {
+            target: +target,
+            names: members.map(m => m.name).join(' / '),
+            total: Math.round(total * 10) / 10
+          };
+        })
+        .sort((a, b) => b.total - a.total);
+    }
+
+    // ── Рендер ────────────────────────────────────────────────
+    function render() {
+      const pairs = buildRanking(localShooters);
+      const tbody = document.getElementById('tbody');
+
+      if (pairs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="3" class="empty">ОЖИДАНИЕ ДАННЫХ</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = pairs.map((p, i) => `
+        <tr class="${i === 0 ? 'leader' : ''}">
+          <td class="place">${i + 1}</td>
+          <td class="pair">${esc(p.names)}</td>
+          <td class="total">${p.total > 0 ? p.total.toFixed(1) : '—'}</td>
+        </tr>
+      `).join('');
+    }
+
+    function esc(str) {
+      return str.replace(/[&<>"']/g, c =>
+        ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+    }
+
+    // ── Загрузка данных ───────────────────────────────────────
+    async function load() {
+      const { data: comps } = await db
+        .from('competitions')
+        .select('*')
+        .eq('is_active', true)
+        .order('date', { ascending: false })
+        .limit(1);
+
+      if (!comps?.length) return;
+      const comp = comps[0];
+
+      document.getElementById('comp-date').textContent =
+        new Date(comp.date + 'T00:00:00').toLocaleDateString('ru-RU',
+          { day: 'numeric', month: 'long', year: 'numeric' });
+
+      const { data: shooters } = await db
+        .from('shooters')
+        .select('*')
+        .eq('competition_id', comp.id);
+
+      localShooters = shooters || [];
+      render();
+      subscribe(comp.id);
+    }
+
+    // ── Realtime подписка ─────────────────────────────────────
+    function subscribe(compId) {
+      const dot = document.getElementById('dot');
+
+      db.channel('scoreboard')
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'shooters',
+          filter: `competition_id=eq.${compId}`
+        }, ({ eventType, new: n, old: o }) => {
+          if (eventType === 'INSERT') {
+            localShooters.push(n);
+          } else if (eventType === 'UPDATE') {
+            const i = localShooters.findIndex(s => s.id === n.id);
+            if (i !== -1) localShooters[i] = n; else localShooters.push(n);
+          } else if (eventType === 'DELETE') {
+            localShooters = localShooters.filter(s => s.id !== o.id);
+          }
+          render();
+        })
+        .subscribe(status => {
+          dot.textContent = status === 'SUBSCRIBED' ? '● live' : '● connecting';
+          dot.className   = status === 'SUBSCRIBED' ? 'live' : '';
+        });
+
+      // Если добавили новое соревнование — перезагрузить страницу
+      db.channel('competitions')
+        .on('postgres_changes', {
+          event: 'INSERT', schema: 'public', table: 'competitions'
+        }, () => location.reload())
+        .subscribe();
+    }
+
+    load();
+  </script>
+</body>
+</html>

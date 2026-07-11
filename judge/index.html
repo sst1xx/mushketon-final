@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mushketon — Судья</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f4f4;
+      color: #111;
+      min-height: 100vh;
+    }
+
+    /* ── Шапка ── */
+    header {
+      background: #111;
+      color: #fff;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    header h1 { font-size: 1.1rem; letter-spacing: 2px; }
+    header .meta { font-size: 0.8rem; color: #666; }
+
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .btn-primary { background: #FFD700; color: #111; }
+    .btn-danger  { background: #c0392b; color: #fff; font-size: 0.8rem; padding: 6px 14px; }
+    .btn-ghost   { background: transparent; color: #aaa; border: 1px solid #333; }
+
+    /* ── Заблокировано ── */
+    #blocked {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      height: 80vh; gap: 12px; color: #888;
+    }
+    #blocked h2 { font-size: 1.2rem; }
+    #blocked p  { font-size: 0.85rem; }
+
+    /* ── Модал настройки соревнования ── */
+    #modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.6);
+      z-index: 100;
+      align-items: center; justify-content: center;
+    }
+    #modal-overlay.visible { display: flex; }
+
+    #modal {
+      background: #fff;
+      border-radius: 12px;
+      padding: 28px;
+      width: 480px;
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    #modal h2 { margin-bottom: 20px; font-size: 1.1rem; }
+
+    /* Таблица ввода участников */
+    #setup-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 16px;
+      font-size: 0.9rem;
+    }
+    #setup-table th {
+      text-align: left;
+      color: #888;
+      font-weight: 500;
+      padding: 4px 8px;
+      border-bottom: 1px solid #eee;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    #setup-table td { padding: 3px 4px; }
+    #setup-table input {
+      width: 100%;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 7px 10px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    #setup-table input:focus { border-color: #FFD700; }
+    #setup-table .sep td {
+      background: #f9f9f9;
+      height: 6px;
+      padding: 0;
+    }
+
+    .modal-actions {
+      display: flex; gap: 10px; justify-content: flex-end; margin-top: 8px;
+    }
+
+    /* ── Основная сетка ── */
+    #main { padding: 24px; }
+
+    #no-competition {
+      text-align: center; padding: 80px 0; color: #aaa;
+    }
+    #no-competition p { margin-bottom: 20px; }
+
+    /* Таблица результатов */
+    #scoring-wrap { overflow-x: auto; }
+
+    #scoring-table {
+      border-collapse: collapse;
+      font-size: 0.9rem;
+      min-width: 600px;
+      background: #fff;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+    }
+
+    #scoring-table th {
+      background: #111;
+      color: #aaa;
+      padding: 10px 14px;
+      text-align: center;
+      font-size: 0.75rem;
+      letter-spacing: 1px;
+      font-weight: 500;
+    }
+    #scoring-table th.left { text-align: left; }
+
+    #scoring-table td {
+      padding: 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    #scoring-table .td-target {
+      text-align: center; width: 52px;
+      color: #888; font-size: 0.85rem;
+      background: #fafafa;
+    }
+    #scoring-table .td-name {
+      padding: 0 14px;
+      font-weight: 500;
+      white-space: nowrap;
+      background: #fafafa;
+    }
+    #scoring-table .td-total {
+      text-align: center;
+      width: 70px;
+      font-weight: 700;
+      color: #111;
+      background: #f6f6f6;
+    }
+
+    /* Ячейка серии */
+    #scoring-table .cell-series input {
+      width: 72px;
+      border: none;
+      text-align: center;
+      padding: 11px 6px;
+      font-size: 0.95rem;
+      outline: none;
+      background: transparent;
+      color: #111;
+    }
+    #scoring-table .cell-series input:focus {
+      background: #fffbe6;
+      outline: 2px solid #FFD700;
+      outline-offset: -2px;
+      border-radius: 3px;
+    }
+    #scoring-table .cell-series input.saved {
+      color: #111;
+    }
+    #scoring-table .cell-series input.unsaved {
+      color: #e67e22;
+    }
+
+    /* Разделитель пар */
+    tr.pair-sep td {
+      height: 4px;
+      background: #f0f0f0;
+      padding: 0;
+    }
+
+    /* Итоговая строка */
+    .td-target span, .td-name span {
+      display: block;
+      padding: 11px 14px 11px 0;
+    }
+    .td-target span { padding: 11px 0; }
+
+    #save-status {
+      text-align: right;
+      font-size: 0.78rem;
+      color: #aaa;
+      margin-top: 8px;
+    }
+    #save-status.saving { color: #e67e22; }
+    #save-status.ok     { color: #27ae60; }
+    #save-status.error  { color: #c0392b; }
+  </style>
+</head>
+<body>
+
+<!-- Шапка -->
+<header>
+  <h1>MUSHKETON · СУДЬЯ</h1>
+  <div class="meta" id="comp-info">—</div>
+  <button class="btn-primary" id="btn-new" style="display:none">+ Новое соревнование</button>
+</header>
+
+<!-- Нет токена -->
+<div id="blocked" style="display:none">
+  <h2>🔒 Доступ закрыт</h2>
+  <p>Откройте страницу по ссылке судьи (со знаком ? в адресе)</p>
+</div>
+
+<!-- Модал: ввод участников -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2>Новое соревнование</h2>
+    <table id="setup-table">
+      <thead>
+        <tr>
+          <th style="width:70px">Щит</th>
+          <th>Фамилия</th>
+        </tr>
+      </thead>
+      <tbody id="setup-body">
+        <!-- строки добавляются динамически -->
+      </tbody>
+    </table>
+    <div class="modal-actions">
+      <button class="btn-ghost" id="btn-cancel-setup">Отмена</button>
+      <button class="btn-primary" id="btn-start">Старт →</button>
+    </div>
+  </div>
+</div>
+
+<!-- Основное содержимое -->
+<div id="main">
+
+  <div id="no-competition" style="display:none">
+    <p>Нет активного соревнования</p>
+    <button class="btn-primary" id="btn-new2">+ Начать соревнование</button>
+  </div>
+
+  <div id="scoring-section" style="display:none">
+    <div id="scoring-wrap">
+      <table id="scoring-table">
+        <thead>
+          <tr id="scoring-head">
+            <th class="left" style="width:52px">Щит</th>
+            <th class="left">Фамилия</th>
+            <!-- серии добавляются динамически -->
+            <th>Σ</th>
+          </tr>
+        </thead>
+        <tbody id="scoring-body"></tbody>
+      </table>
+    </div>
+    <div id="save-status"></div>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+// ─── Конфиг ────────────────────────────────────────────────────────────────
+const SUPABASE_URL      = 'REPLACE_WITH_YOUR_SUPABASE_URL';
+const SUPABASE_ANON_KEY = 'REPLACE_WITH_YOUR_SUPABASE_ANON_KEY';
+// ───────────────────────────────────────────────────────────────────────────
+
+const { createClient } = supabase;
+
+// ── Токен из URL ─────────────────────────────────────────────────────────
+const token = new URLSearchParams(location.search).get('token');
+
+if (!token) {
+  document.getElementById('blocked').style.display = 'flex';
+  document.querySelector('header').style.display = 'none';
+  document.getElementById('main').style.display = 'none';
+  throw new Error('No token');
+}
+
+// Клиент с токеном в заголовке
+const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  global: { headers: { 'x-judge-token': token } }
+});
+
+// ── Состояние ────────────────────────────────────────────────────────────
+let competition  = null;
+let shooters     = [];          // [{id, target, name, position, s1..s6}]
+let seriesCount  = 6;           // сколько колонок серий показывать
+let focusedInput = null;
+
+// ── Инициализация ────────────────────────────────────────────────────────
+async function init() {
+  const { data: comps, error } = await db
+    .from('competitions')
+    .select('*')
+    .eq('is_active', true)
+    .order('date', { ascending: false })
+    .limit(1);
+
+  if (error) { showStatus('Ошибка подключения: ' + error.message, 'error'); return; }
+
+  document.getElementById('btn-new').style.display = 'block';
+
+  if (!comps || comps.length === 0) {
+    document.getElementById('no-competition').style.display = 'block';
+    document.getElementById('scoring-section').style.display = 'none';
+    return;
+  }
+
+  competition = comps[0];
+  await loadShooters();
+}
+
+async function loadShooters() {
+  const { data, error } = await db
+    .from('shooters')
+    .select('*')
+    .eq('competition_id', competition.id)
+    .order('target')
+    .order('position');
+
+  if (error) { showStatus('Ошибка загрузки: ' + error.message, 'error'); return; }
+
+  shooters = data || [];
+
+  document.getElementById('no-competition').style.display = 'none';
+  document.getElementById('scoring-section').style.display = 'block';
+
+  const d = new Date(competition.date + 'T00:00:00');
+  document.getElementById('comp-info').textContent =
+    d.toLocaleDateString('ru-RU', { day:'numeric', month:'long', year:'numeric' });
+
+  renderScoring();
+}
+
+// ── Рендер таблицы результатов ───────────────────────────────────────────
+function renderScoring() {
+  if (!shooters.length) return;
+
+  // Определить сколько серий есть в данных
+  const used = ['s1','s2','s3','s4','s5','s6'].filter(k =>
+    shooters.some(s => s[k] != null)
+  );
+  // Показываем минимум 3 серии, максимум 6, всегда +1 пустая для ввода
+  seriesCount = Math.min(6, Math.max(3, used.length + 1));
+
+  // Заголовок
+  const head = document.getElementById('scoring-head');
+  head.innerHTML = '<th class="left" style="width:52px">Щит</th><th class="left">Фамилия</th>';
+  for (let i = 1; i <= seriesCount; i++) {
+    head.innerHTML += `<th>С${i}</th>`;
+  }
+  head.innerHTML += '<th>Σ</th>';
+
+  // Сгруппировать по щиту
+  const byTarget = {};
+  for (const s of shooters) {
+    if (!byTarget[s.target]) byTarget[s.target] = [];
+    byTarget[s.target].push(s);
+  }
+  const targets = Object.keys(byTarget).map(Number).sort((a, b) => a - b);
+
+  const tbody = document.getElementById('scoring-body');
+  tbody.innerHTML = '';
+
+  targets.forEach((target, tIdx) => {
+    const pair = byTarget[target].sort((a, b) => a.position - b.position);
+
+    // Разделитель между парами
+    if (tIdx > 0) {
+      const sep = tbody.insertRow();
+      sep.className = 'pair-sep';
+      sep.insertCell().colSpan = 2 + seriesCount + 1;
+    }
+
+    pair.forEach(shooter => {
+      const tr = tbody.insertRow();
+      tr.dataset.id = shooter.id;
+
+      // Щит
+      const tdTarget = tr.insertCell();
+      tdTarget.className = 'td-target';
+      tdTarget.innerHTML = `<span>${shooter.target}</span>`;
+
+      // Фамилия
+      const tdName = tr.insertCell();
+      tdName.className = 'td-name';
+      tdName.innerHTML = `<span>${esc(shooter.name)}</span>`;
+
+      // Серии
+      for (let i = 1; i <= seriesCount; i++) {
+        const key = 's' + i;
+        const val = shooter[key];
+        const td = tr.insertCell();
+        td.className = 'cell-series';
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.inputMode = 'decimal';
+        inp.dataset.id  = shooter.id;
+        inp.dataset.key = key;
+        inp.value = val != null ? val : '';
+        inp.className = val != null ? 'saved' : '';
+        inp.addEventListener('focus', onFocus);
+        inp.addEventListener('blur',  onBlur);
+        inp.addEventListener('input', onInput);
+        inp.addEventListener('keydown', onKeyDown);
+        td.appendChild(inp);
+      }
+
+      // Итого
+      const tdTotal = tr.insertCell();
+      tdTotal.className = 'td-total';
+      tdTotal.id = 'total-' + shooter.id;
+      tdTotal.textContent = calcTotal(shooter) || '—';
+    });
+  });
+}
+
+function calcTotal(shooter) {
+  let sum = 0, any = false;
+  for (let i = 1; i <= 6; i++) {
+    const v = shooter['s' + i];
+    if (v != null) { sum += parseFloat(v); any = true; }
+  }
+  return any ? (Math.round(sum * 10) / 10).toFixed(1) : null;
+}
+
+// ── Обработчики ячеек ────────────────────────────────────────────────────
+function onFocus(e) { focusedInput = e.target; }
+
+function onInput(e) {
+  e.target.className = 'unsaved';
+}
+
+async function onBlur(e) {
+  const inp = e.target;
+  const raw = inp.value.trim().replace(',', '.');
+  const id  = inp.dataset.id;
+  const key = inp.dataset.key;
+
+  if (raw === '') {
+    await saveCell(id, key, null);
+    inp.className = '';
+    return;
+  }
+  const val = parseFloat(raw);
+  if (isNaN(val)) { inp.value = ''; inp.className = ''; return; }
+
+  inp.value = val;
+  await saveCell(id, key, val);
+  inp.className = 'saved';
+}
+
+async function saveCell(id, key, value) {
+  showStatus('Сохранение...', 'saving');
+  const update = { [key]: value };
+  const { error } = await db.from('shooters').update(update).eq('id', id);
+  if (error) {
+    showStatus('Ошибка: ' + error.message, 'error');
+    return;
+  }
+  // Обновить локально
+  const s = shooters.find(x => x.id === id);
+  if (s) {
+    s[key] = value;
+    const totalEl = document.getElementById('total-' + id);
+    if (totalEl) totalEl.textContent = calcTotal(s) || '—';
+  }
+  showStatus('Сохранено', 'ok');
+  setTimeout(() => showStatus('', ''), 1500);
+}
+
+// ── Навигация клавиатурой ────────────────────────────────────────────────
+function onKeyDown(e) {
+  const inp = e.target;
+  const key = e.key;
+
+  if (key === 'Enter' || key === 'Tab') {
+    e.preventDefault();
+    moveFocus(inp, e.shiftKey ? -1 : +1);
+    return;
+  }
+
+  if (key === 'ArrowRight') { moveFocus(inp, +1); return; }
+  if (key === 'ArrowLeft')  { moveFocus(inp, -1); return; }
+  if (key === 'ArrowDown')  { moveFocusVertical(inp, +1); return; }
+  if (key === 'ArrowUp')    { moveFocusVertical(inp, -1); return; }
+}
+
+function allInputs() {
+  return Array.from(document.querySelectorAll('#scoring-body input[data-key]'));
+}
+
+function moveFocus(inp, delta) {
+  const inputs = allInputs();
+  const idx = inputs.indexOf(inp);
+  const next = inputs[idx + delta];
+  if (next) { inp.blur(); next.focus(); next.select(); }
+}
+
+function moveFocusVertical(inp, delta) {
+  // Найти input в той же колонке на строку выше/ниже
+  const key = inp.dataset.key;
+  const sameKey = allInputs().filter(x => x.dataset.key === key);
+  const idx = sameKey.indexOf(inp);
+  const next = sameKey[idx + delta];
+  if (next) { inp.blur(); next.focus(); next.select(); }
+}
+
+// ── Статус ────────────────────────────────────────────────────────────────
+function showStatus(msg, cls) {
+  const el = document.getElementById('save-status');
+  el.textContent = msg;
+  el.className = cls;
+}
+
+// ── Модал: Новое соревнование ────────────────────────────────────────────
+function openSetupModal() {
+  const tbody = document.getElementById('setup-body');
+  tbody.innerHTML = '';
+  // Начинаем с 4 стрелков (2 пары) — легко добавить ещё
+  for (let i = 0; i < 4; i++) addSetupRow(i);
+  document.getElementById('modal-overlay').classList.add('visible');
+  tbody.querySelector('input[data-col="target"]').focus();
+}
+
+function addSetupRow(idx) {
+  const tbody = document.getElementById('setup-body');
+
+  // Разделитель между парами
+  if (idx > 0 && idx % 2 === 0) {
+    const sep = tbody.insertRow();
+    sep.className = 'sep';
+    sep.insertCell().colSpan = 2;
+  }
+
+  const tr = tbody.insertRow();
+  tr.dataset.idx = idx;
+
+  const tdTarget = tr.insertCell();
+  const inpTarget = document.createElement('input');
+  inpTarget.type = 'text';
+  inpTarget.inputMode = 'numeric';
+  inpTarget.placeholder = 'щит';
+  inpTarget.dataset.col = 'target';
+  inpTarget.dataset.row = idx;
+  tdTarget.appendChild(inpTarget);
+
+  const tdName = tr.insertCell();
+  const inpName = document.createElement('input');
+  inpName.type = 'text';
+  inpName.placeholder = 'фамилия';
+  inpName.dataset.col = 'name';
+  inpName.dataset.row = idx;
+  tdName.appendChild(inpName);
+
+  // Enter в последней строке — добавить ещё пару
+  inpName.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const rows = tbody.querySelectorAll('tr:not(.sep)');
+      const isLast = parseInt(inpName.dataset.row) === rows.length - 1;
+      if (isLast) {
+        const count = rows.length;
+        addSetupRow(count);
+        addSetupRow(count + 1);
+      }
+      // Перейти к следующей строке
+      const next = tbody.querySelector(`input[data-col="target"][data-row="${idx + 1}"]`);
+      if (next) next.focus();
+    }
+  });
+}
+
+document.getElementById('btn-new').addEventListener('click', openSetupModal);
+document.getElementById('btn-new2')?.addEventListener('click', openSetupModal);
+document.getElementById('btn-cancel-setup').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('visible');
+});
+
+document.getElementById('btn-start').addEventListener('click', async () => {
+  // Собрать данные из формы
+  const rows = document.querySelectorAll('#setup-body tr:not(.sep)');
+  const entries = [];
+
+  rows.forEach((tr, i) => {
+    const t = tr.querySelector('input[data-col="target"]')?.value.trim();
+    const n = tr.querySelector('input[data-col="name"]')?.value.trim();
+    if (t && n) entries.push({ target: parseInt(t), name: n, idx: i });
+  });
+
+  if (entries.length < 2) {
+    alert('Введите хотя бы двух участников'); return;
+  }
+
+  document.getElementById('btn-start').disabled = true;
+  document.getElementById('btn-start').textContent = 'Создаём...';
+
+  // Деактивировать предыдущие соревнования
+  await db.from('competitions').update({ is_active: false }).eq('is_active', true);
+
+  // Создать новое соревнование
+  const { data: compData, error: compErr } = await db
+    .from('competitions')
+    .insert({ date: new Date().toISOString().slice(0, 10), is_active: true })
+    .select()
+    .single();
+
+  if (compErr) {
+    alert('Ошибка создания соревнования: ' + compErr.message);
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-start').textContent = 'Старт →';
+    return;
+  }
+
+  competition = compData;
+
+  // Сгруппировать по щиту чтобы определить position
+  const byTarget = {};
+  entries.forEach(e => {
+    if (!byTarget[e.target]) byTarget[e.target] = [];
+    byTarget[e.target].push(e);
+  });
+
+  const toInsert = [];
+  Object.entries(byTarget).forEach(([target, members]) => {
+    members.forEach((m, i) => {
+      toInsert.push({
+        competition_id: competition.id,
+        target: parseInt(target),
+        name: m.name,
+        position: i + 1
+      });
+    });
+  });
+
+  const { error: shooterErr } = await db.from('shooters').insert(toInsert);
+
+  if (shooterErr) {
+    alert('Ошибка добавления участников: ' + shooterErr.message);
+    document.getElementById('btn-start').disabled = false;
+    document.getElementById('btn-start').textContent = 'Старт →';
+    return;
+  }
+
+  document.getElementById('modal-overlay').classList.remove('visible');
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-start').textContent = 'Старт →';
+
+  await loadShooters();
+});
+
+// ── Esc закрывает модал ──────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape')
+    document.getElementById('modal-overlay').classList.remove('visible');
+});
+
+// ── Утилиты ──────────────────────────────────────────────────────────────
+function esc(str) {
+  return str.replace(/[&<>"']/g, c =>
+    ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+
+// ── Запуск ───────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
