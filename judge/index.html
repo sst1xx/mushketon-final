@@ -248,6 +248,19 @@
       </table>
     </div>
     <div id="save-status"></div>
+
+    <hr style="border:none; border-top:1px solid #ddd; margin: 28px 0 20px;">
+    <h3 style="font-size:0.85rem; color:#888; letter-spacing:2px; text-transform:uppercase; margin-bottom:12px">Рейтинг</h3>
+    <table id="ranking-table" style="border-collapse:collapse; font-size:0.9rem; width:100%; max-width:460px;">
+      <thead>
+        <tr style="color:#aaa; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">
+          <th style="padding:4px 12px 8px 0; text-align:left; width:28px">#</th>
+          <th style="padding:4px 12px 8px 0; text-align:left">Пара</th>
+          <th style="padding:4px 0 8px; text-align:right">Итого</th>
+        </tr>
+      </thead>
+      <tbody id="ranking-body"></tbody>
+    </table>
   </div>
 </div>
 
@@ -331,6 +344,7 @@ async function loadShooters() {
   document.getElementById('scoring-section').style.display = 'block';
 
   renderScoring();
+  renderRanking();
 }
 
 // Заголовки серий: количество выстрелов в каждой серии
@@ -434,8 +448,45 @@ async function saveCell(id, key, value) {
     const el = document.getElementById('total-' + id);
     if (el) el.innerHTML = `<span>${calcTotal(s) || '—'}</span>`;
   }
+  renderRanking();
   showStatus('Сохранено ✓', 'ok');
   setTimeout(() => showStatus('', ''), 1500);
+}
+
+// ── Рейтинг (одни данные shooters, без дублирования) ────────────
+function buildRanking() {
+  const byPair = {};
+  for (const s of shooters) {
+    const idx = Math.floor((s.target - 1) / 2);
+    if (!byPair[idx]) byPair[idx] = [];
+    byPair[idx].push(s);
+  }
+  return Object.values(byPair)
+    .map(members => {
+      members.sort((a, b) => a.target - b.target);
+      const total = members.reduce((sum, m) => {
+        return sum + [m.s1,m.s2,m.s3,m.s4,m.s5,m.s6]
+          .reduce((a, v) => a + (v != null ? parseFloat(v) : 0), 0);
+      }, 0);
+      return {
+        names: members.map(m => m.name).join(' / '),
+        total: Math.round(total * 10) / 10
+      };
+    })
+    .sort((a, b) => b.total - a.total);
+}
+
+function renderRanking() {
+  const pairs = buildRanking();
+  const tbody = document.getElementById('ranking-body');
+  if (!tbody) return;
+  tbody.innerHTML = pairs.map((p, i) => `
+    <tr style="border-top:1px solid #f0f0f0">
+      <td style="padding:8px 12px 8px 0; color:#aaa">${i + 1}</td>
+      <td style="padding:8px 12px 8px 0; font-weight:${i === 0 ? '700' : '400'}">${esc(p.names)}</td>
+      <td style="padding:8px 0; text-align:right; font-weight:700">${p.total > 0 ? p.total.toFixed(1) : '—'}</td>
+    </tr>
+  `).join('');
 }
 
 // ── Навигация ─────────────────────────────────────────────
