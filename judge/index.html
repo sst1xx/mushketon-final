@@ -222,6 +222,9 @@
       </thead>
       <tbody id="setup-body"></tbody>
     </table>
+    <div style="margin-bottom:14px">
+      <button class="btn-ghost" id="btn-add-pair" style="width:100%; font-size:1.2rem; padding:6px;">+ пара</button>
+    </div>
     <div class="modal-actions">
       <button class="btn-ghost" id="btn-cancel-setup">Отмена</button>
       <button class="btn-primary" id="btn-start">Старт →</button>
@@ -482,9 +485,13 @@ function showStatus(msg, cls) {
 function openSetupModal() {
   const tbody = document.getElementById('setup-body');
   tbody.innerHTML = '';
-  for (let i = 0; i < 20; i++) addSetupRow(i);
+  for (let i = 0; i < 8; i++) addSetupRow(i); // 4 пары по умолчанию
   document.getElementById('modal-overlay').classList.add('visible');
   tbody.querySelector('input[data-col="name"]').focus();
+}
+
+function currentRowCount() {
+  return document.querySelectorAll('#setup-body tr:not(.sep)').length;
 }
 
 function addSetupRow(idx) {
@@ -521,6 +528,17 @@ function addSetupRow(idx) {
     }
   });
 }
+
+document.getElementById('btn-add-pair').addEventListener('click', () => {
+  const count = currentRowCount();
+  if (count >= 20) return; // максимум 10 пар
+  addSetupRow(count);
+  addSetupRow(count + 1);
+  // Фокус на первую новую строку
+  const tbody = document.getElementById('setup-body');
+  const inp = tbody.querySelector(`input[data-row="${count}"]`);
+  if (inp) { inp.focus(); inp.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+});
 
 document.getElementById('btn-new').addEventListener('click', openSetupModal);
 document.getElementById('btn-new2').addEventListener('click', openSetupModal);
