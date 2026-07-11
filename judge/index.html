@@ -222,9 +222,6 @@
       </thead>
       <tbody id="setup-body"></tbody>
     </table>
-    <div style="margin-bottom:14px">
-      <button class="btn-ghost" id="btn-add-pair" style="width:100%; font-size:1.2rem; padding:6px;">+ пара</button>
-    </div>
     <div class="modal-actions">
       <button class="btn-ghost" id="btn-cancel-setup">Отмена</button>
       <button class="btn-primary" id="btn-start">Старт →</button>
@@ -279,7 +276,6 @@ const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
 
 let competition = null;
 let shooters    = [];
-let seriesCount = 3;
 
 // ── Инициализация ─────────────────────────────────────────
 async function init() {
@@ -337,20 +333,18 @@ async function loadShooters() {
   renderScoring();
 }
 
+// Заголовки серий: количество выстрелов в каждой серии
+const SERIES_LABELS = ['5','5','5','3','3','3'];
+const SERIES_COUNT  = 6;
+
 // ── Таблица результатов ───────────────────────────────────
 // Пары: щит 1+2, щит 3+4, щит 5+6 ... до щит 19+20
 function renderScoring() {
-  const used = ['s1','s2','s3','s4','s5','s6'].filter(k =>
-    shooters.some(s => s[k] != null)
-  );
-  seriesCount = Math.min(6, Math.max(3, used.length + 1));
-
   const head = document.getElementById('scoring-head');
   head.innerHTML =
     '<th class="left" style="width:52px">Щит</th>' +
     '<th class="left">Фамилия</th>';
-  for (let i = 1; i <= seriesCount; i++)
-    head.innerHTML += `<th>С${i}</th>`;
+  SERIES_LABELS.forEach(label => head.innerHTML += `<th>${label}</th>`);
   head.innerHTML += '<th>Σ</th>';
 
   const sorted = [...shooters].sort((a, b) => a.target - b.target);
@@ -362,7 +356,7 @@ function renderScoring() {
     if (idx > 0 && shooter.target % 2 === 1) {
       const sep = tbody.insertRow();
       sep.className = 'pair-sep';
-      sep.insertCell().colSpan = 2 + seriesCount + 1;
+      sep.insertCell().colSpan = 2 + SERIES_COUNT + 1;
     }
 
     const tr = tbody.insertRow();
@@ -376,7 +370,7 @@ function renderScoring() {
     tdN.className = 'td-name';
     tdN.innerHTML = `<span>${esc(shooter.name)}</span>`;
 
-    for (let i = 1; i <= seriesCount; i++) {
+    for (let i = 1; i <= SERIES_COUNT; i++) {
       const key = 's' + i;
       const val = shooter[key];
       const td  = tr.insertCell();
@@ -485,13 +479,9 @@ function showStatus(msg, cls) {
 function openSetupModal() {
   const tbody = document.getElementById('setup-body');
   tbody.innerHTML = '';
-  for (let i = 0; i < 8; i++) addSetupRow(i); // 4 пары по умолчанию
+  for (let i = 0; i < 8; i++) addSetupRow(i); // всегда 4 пары
   document.getElementById('modal-overlay').classList.add('visible');
   tbody.querySelector('input[data-col="name"]').focus();
-}
-
-function currentRowCount() {
-  return document.querySelectorAll('#setup-body tr:not(.sep)').length;
 }
 
 function addSetupRow(idx) {
@@ -528,17 +518,6 @@ function addSetupRow(idx) {
     }
   });
 }
-
-document.getElementById('btn-add-pair').addEventListener('click', () => {
-  const count = currentRowCount();
-  if (count >= 20) return; // максимум 10 пар
-  addSetupRow(count);
-  addSetupRow(count + 1);
-  // Фокус на первую новую строку
-  const tbody = document.getElementById('setup-body');
-  const inp = tbody.querySelector(`input[data-row="${count}"]`);
-  if (inp) { inp.focus(); inp.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
-});
 
 document.getElementById('btn-new').addEventListener('click', openSetupModal);
 document.getElementById('btn-new2').addEventListener('click', openSetupModal);
