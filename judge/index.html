@@ -491,14 +491,16 @@ function renderRanking() {
 
 // ── Навигация ─────────────────────────────────────────────
 function onKeyDown(e) {
-  if (e.key === 'Enter' || (e.key === 'Tab' && !e.shiftKey)) {
-    e.preventDefault(); moveFocus(e.target, +1);
+  if (e.key === 'Enter') {
+    e.preventDefault(); moveFocusVertical(e.target, +1); // Enter ↓ следующая строка
+  } else if (e.key === 'Tab' && !e.shiftKey) {
+    e.preventDefault(); moveFocus(e.target, +1);          // Tab → следующая колонка
   } else if (e.key === 'Tab' && e.shiftKey) {
-    e.preventDefault(); moveFocus(e.target, -1);
-  } else if (e.key === 'ArrowRight') { moveFocus(e.target, +1); }
+    e.preventDefault(); moveFocus(e.target, -1);          // Shift+Tab ←
+  } else if (e.key === 'ArrowDown')  { e.preventDefault(); moveFocusVertical(e.target, +1); }
+    else if (e.key === 'ArrowUp')    { e.preventDefault(); moveFocusVertical(e.target, -1); }
+    else if (e.key === 'ArrowRight') { moveFocus(e.target, +1); }
     else if (e.key === 'ArrowLeft')  { moveFocus(e.target, -1); }
-    else if (e.key === 'ArrowDown')  { moveFocusVertical(e.target, +1); }
-    else if (e.key === 'ArrowUp')    { moveFocusVertical(e.target, -1); }
 }
 
 function allInputs() {
