@@ -108,6 +108,21 @@
     /* ── Основная сетка ── */
     #main { padding: 24px; }
 
+    #error-box {
+      background: #fff0f0;
+      border: 1px solid #f5c6c6;
+      border-radius: 8px;
+      padding: 20px 24px;
+      color: #c0392b;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      display: none;
+    }
+
+    #loading {
+      text-align: center; padding: 60px 0; color: #aaa; font-size: 0.9rem;
+    }
+
     #no-competition {
       text-align: center; padding: 80px 0; color: #aaa;
     }
@@ -250,6 +265,9 @@
 <!-- Основное содержимое -->
 <div id="main">
 
+  <div id="error-box"></div>
+  <div id="loading">Подключение...</div>
+
   <div id="no-competition" style="display:none">
     <p>Нет активного соревнования</p>
     <button class="btn-primary" id="btn-new2">+ Начать соревнование</button>
@@ -306,6 +324,8 @@ let focusedInput = null;
 
 // ── Инициализация ────────────────────────────────────────────────────────
 async function init() {
+  document.getElementById('loading').style.display = 'block';
+
   const { data: comps, error } = await db
     .from('competitions')
     .select('*')
@@ -313,7 +333,14 @@ async function init() {
     .order('date', { ascending: false })
     .limit(1);
 
-  if (error) { showStatus('Ошибка подключения: ' + error.message, 'error'); return; }
+  document.getElementById('loading').style.display = 'none';
+
+  if (error) {
+    const box = document.getElementById('error-box');
+    box.textContent = 'Ошибка подключения к базе данных: ' + error.message;
+    box.style.display = 'block';
+    return;
+  }
 
   document.getElementById('btn-new').style.display = 'block';
 
