@@ -26,33 +26,25 @@
 - Automatically expose new tables: ❌ OFF
 - Enable automatic RLS: ✅ ON
 
-### 3б. Создать таблицы и политики
+### 3б. Создать таблицы, политики, права и Realtime
 
-**SQL Editor → New Query** → вставить содержимое `supabase_setup.sql`
+**SQL Editor → New Query** → вставить всё содержимое `supabase_setup.sql`
 
 ⚠️ В первой строке заменить `REPLACE_ME` на свой секретный токен → **Run**
 
-### 3в. Выдать права
+> Этот один SQL делает всё сразу: таблицы, RLS-политики, `GRANT`-права и включение
+> Realtime. Ручные шаги в консоли не нужны.
 
-```sql
-GRANT SELECT ON competitions TO anon;
-GRANT SELECT ON shooters     TO anon;
-GRANT INSERT, UPDATE         ON competitions TO anon;
-GRANT INSERT, UPDATE, DELETE ON shooters     TO anon;
+### 3в. Вписать ключи в `config.js`
+
+В корневом файле `config.js` заменить значения:
+
+```js
+window.MUSHKETON_CONFIG = {
+  SUPABASE_URL: '...',       // Project URL (Settings → API)
+  SUPABASE_ANON_KEY: '...'   // anon public key
+};
 ```
 
-### 3г. Включить Realtime
-
-Table Editor → таблица `shooters` → **Edit table** → **Enable Realtime** → Save.
-Повторить для `competitions`.
-
-### 3д. Вставить ключи в HTML-файлы
-
-В `judge/index.html` и `scoreboard/index.html` заменить:
-
-```
-REPLACE_WITH_YOUR_SUPABASE_URL      → Project URL (Settings → API)
-REPLACE_WITH_YOUR_SUPABASE_ANON_KEY → anon public key
-```
-
-> ⚠️ Ключи не вносить в этот файл — репозиторий публичный.
+> Ключи теперь в одном месте — обе страницы (`judge/`, `scoreboard/`) читают
+> его через `../config.js`. anon key публичен по дизайну — защита через RLS.

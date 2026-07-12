@@ -116,16 +116,20 @@
   <div id="dot">●</div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+    <script src="../config.js"></script>
   <script>
     // ─── Конфиг ───────────────────────────────────────────────
-    const SUPABASE_URL      = 'https://dqtwattqjzeukyxpnicj.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_ZyCG0DMsiFZYnPRmNcup1g_vgVQnXwv';
+    const SUPABASE_URL      = window.MUSHKETON_CONFIG.SUPABASE_URL;
+    const SUPABASE_ANON_KEY = window.MUSHKETON_CONFIG.SUPABASE_ANON_KEY;
     // ──────────────────────────────────────────────────────────
 
     const { createClient } = supabase;
     const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     let localShooters = [];
+    let currentCompId = null;
+    let shootersChannel = null;
+    let reconnectTimer = null;
 
     // ── Подсчёт пар ───────────────────────────────────────────
     // Пара = щит 1+2, щит 3+4, щит 5+6 и т.д. (до 10 пар = 20 щитов)
@@ -187,26 +191,37 @@
 
       if (!comps?.length) return;
       const comp = comps[0];
+      currentCompId = comp.id;
 
       document.getElementById('comp-date').textContent =
         new Date(comp.date + 'T00:00:00').toLocaleDateString('ru-RU',
           { day: 'numeric', month: 'long', year: 'numeric' });
 
-      const { data: shooters } = await db
-        .from('shooters')
-        .select('*')
-        .eq('competition_id', comp.id);
-
-      localShooters = shooters || [];
-      render();
+      await refreshShooters();
       subscribe(comp.id);
     }
 
-    // ── Realtime подписка ─────────────────────────────────────
+    // Перечитать всех стрелков текущего соревнования (фолбэк после реконнекта)
+    async function refreshShooters() {
+      if (!currentCompId) return;
+      const { data: shooters, error } = await db
+        .from('shooters')
+        .select('*')
+        .eq('competition_id', currentCompId);
+      if (!error) {
+        localShooters = shooters || [];
+        render();
+      }
+    }
+
+    // ── Realtime подписка + авто-реконнект ────────────────────
     function subscribe(compId) {
       const dot = document.getElementById('dot');
 
-      db.channel('scoreboard')
+      // Пересоздаём канал при повторном вызове
+      if (shootersChannel) { db.removeChannel(shootersChannel); shootersChannel = null; }
+
+      shootersChannel = db.channel('scoreboard-' + Date.now())
         .on('postgres_changes', {
           event: '*',
           schema: 'public',
@@ -224,8 +239,21 @@
           render();
         })
         .subscribe(status => {
-          dot.textContent = status === 'SUBSCRIBED' ? '● live' : '● connecting';
-          dot.className   = status === 'SUBSCRIBED' ? 'live' : '';
+          if (status === 'SUBSCRIBED') {
+            dot.textContent = '● live';
+            dot.className   = 'live';
+            if (reconnectTimer) { clearTimeout(reconnectTimer); reconnectTimer = null; }
+            // После (пере)подключения подтягиваем актуальные данные —
+            // на случай изменений, пропущенных во время обрыва
+            refreshShooters();
+          } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+            dot.textContent = '● connecting';
+            dot.className   = 'error';
+            scheduleReconnect(compId);
+          } else {
+            dot.textContent = '● connecting';
+            dot.className   = '';
+          }
         });
 
       // Если добавили новое соревнование — перезагрузить страницу
@@ -235,6 +263,37 @@
         }, () => location.reload())
         .subscribe();
     }
+
+    // Повторное подключение с задержкой (без спама)
+    function scheduleReconnect(compId) {
+      if (reconnectTimer) return;
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        subscribe(compId);
+      }, 3000);
+    }
+
+    // Реконнект при возврате вкладки / восстановлении сети
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden && currentCompId) { refreshShooters(); subscribe(currentCompId); }
+    });
+    window.addEventListener('online', () => {
+      if (currentCompId) { refreshShooters(); subscribe(currentCompId); }
+    });
+
+    // ── Полноэкранный режим ───────────────────────────────────
+    // Двойной клик по странице или клавиша F — вкл/выкл fullscreen
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen?.();
+      } else {
+        document.exitFullscreen?.();
+      }
+    }
+    document.addEventListener('dblclick', toggleFullscreen);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'f' || e.key === 'F' || e.key === 'а' || e.key === 'А') toggleFullscreen();
+    });
 
     load();
   </script>

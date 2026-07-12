@@ -7,13 +7,14 @@
         │
         ▼
 judge/index.html (GitHub Pages)
+        │  читает ключи из ../config.js
         │  INSERT / UPDATE с заголовком x-judge-token
         ▼
 Supabase DB (PostgreSQL)
         │  Realtime broadcast (WebSocket push, без polling)
         ▼
 scoreboard/index.html (GitHub Pages)
-        │
+        │  читает ключи из ../config.js
         ▼
 Зрители
 ```
@@ -32,8 +33,14 @@ scoreboard/index.html (GitHub Pages)
 - JS читает токен и добавляет в каждый запрос заголовок `x-judge-token`
 - Supabase RLS проверяет заголовок через функцию `get_judge_token()`
 - Токен хранится ТОЛЬКО в: Supabase (функция) + URL у судьи
-- В коде репозитория токена нет
-- Anon key в коде — публичный по дизайну, защита через RLS
+- Смена токена: `sql/rotate-token.sql` (код репозитория не меняется)
+- Anon key в `config.js` — публичный по дизайну, защита через RLS
+
+## Конфигурация
+
+Ключи Supabase вынесены в корневой `config.js` (`window.MUSHKETON_CONFIG`).
+Обе страницы подключают его через `../config.js` — ключи меняются в одном
+месте. Параметры соревнования (4 пары / 8 стрелков, серии 5 5 5 3 3 3) зашиты в JS.
 
 ## RLS политики
 
@@ -58,20 +65,20 @@ scoreboard/index.html (GitHub Pages)
 |------|-----|----------|
 | `id` | uuid | PK |
 | `competition_id` | uuid | FK → competitions |
-| `target` | integer | номер щита (1–20) |
+| `target` | integer | номер щита (1–8) |
 | `name` | text | фамилия |
 | `position` | integer | всегда 1 (один стрелок на щит) |
 | `s1`..`s6` | decimal | суммы серий |
 
 ## Логика пар
 
-Пара = два соседних щита:
+Фиксированный формат: **4 пары / 8 стрелков** (щиты 1–8). Пара = два соседних щита:
 
 ```
-Пара 1  = щит  1 + щит  2
-Пара 2  = щит  3 + щит  4
-...
-Пара 10 = щит 19 + щит 20
+Пара 1 = щит 1 + щит 2
+Пара 2 = щит 3 + щит 4
+Пара 3 = щит 5 + щит 6
+Пара 4 = щит 7 + щит 8
 ```
 
 Итого пары = сумма всех `s1..s6` обоих стрелков.

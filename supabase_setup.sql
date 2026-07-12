@@ -95,7 +95,16 @@ CREATE POLICY "judge_delete_shooter" ON shooters
   );
 
 -- ============================================================
--- ШАГ 5: Включить Realtime для таблиц
+-- ШАГ 5: Выдать права анонимной роли (RLS ограничит доступ)
+-- Запись разрешена только с правильным токеном (см. ШАГ 4).
+-- ============================================================
+GRANT SELECT                 ON competitions TO anon;
+GRANT INSERT, UPDATE         ON competitions TO anon;
+GRANT SELECT                 ON shooters     TO anon;
+GRANT INSERT, UPDATE, DELETE ON shooters     TO anon;
+
+-- ============================================================
+-- ШАГ 6: Включить Realtime для таблиц
 -- ============================================================
 ALTER PUBLICATION supabase_realtime ADD TABLE shooters;
 ALTER PUBLICATION supabase_realtime ADD TABLE competitions;
