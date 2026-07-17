@@ -709,7 +709,7 @@ document.getElementById('btn-tstop').addEventListener('click', stopTimer);
 
 function onKeyDown(e) {
   if (e.key === 'Enter') {
-    e.preventDefault(); moveFocusVertical(e.target, +1); // Enter ↓ следующая строка
+    e.preventDefault(); moveFocusEnter(e.target); // Enter ↓, в конце столбца → следующий столбец
   } else if (e.key === 'Tab' && !e.shiftKey) {
     e.preventDefault(); moveFocus(e.target, +1);          // Tab → следующая колонка
   } else if (e.key === 'Tab' && e.shiftKey) {
@@ -736,6 +736,24 @@ function moveFocusVertical(inp, d) {
   const i    = col.indexOf(inp);
   const next = col[i + d];
   if (next) { inp.blur(); next.focus(); next.select(); }
+}
+
+// Enter: вниз по столбцу; на последней строке столбца → первая строка следующего
+// столбца; в самой последней ячейке (последний столбец, последняя строка) —
+// сохранить значение и остаться на месте.
+function moveFocusEnter(inp) {
+  const key  = inp.dataset.key;
+  const col  = allInputs().filter(x => x.dataset.key === key);
+  const i    = col.indexOf(inp);
+  const next = col[i + 1];
+  if (next) { inp.blur(); next.focus(); next.select(); return; }
+
+  const n     = parseInt(key.slice(1), 10);
+  const nextKey = n < SERIES_COUNT ? 's' + (n + 1) : null;
+  const nextCol = nextKey ? allInputs().filter(x => x.dataset.key === nextKey) : [];
+  if (nextCol[0]) { inp.blur(); nextCol[0].focus(); nextCol[0].select(); return; }
+
+  inp.blur(); inp.focus(); inp.select(); // последняя ячейка — сохранить и остаться
 }
 
 function showStatus(msg, cls) {
