@@ -194,6 +194,78 @@
     #save-status.saving { color: #e67e22; }
     #save-status.ok     { color: #27ae60; }
     #save-status.error  { color: #c0392b; }
+
+    /* ── Таймер (страница судьи) ────────────────────────────── */
+    #timer-block {
+      background: #fff;
+      border-radius: 8px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+      padding: 20px 24px;
+      margin-bottom: 24px;
+      display: none; /* показываем когда есть активное соревнование */
+    }
+    #timer-block .timer-label {
+      font-size: 0.72rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: #aaa;
+      margin-bottom: 14px;
+    }
+    #timer-block .timer-btns {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+    .btn-timer {
+      background: #f0f0f0;
+      color: #111;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-timer:hover { background: #e0e0e0; }
+    .btn-timer.active { background: #111; color: #FFD700; }
+    .btn-timer-stop {
+      background: transparent;
+      color: #aaa;
+      border: 1px solid #ddd;
+      font-size: 0.9rem;
+      font-weight: 600;
+      padding: 8px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-timer-stop:hover { background: #fff0f0; color: #c0392b; border-color: #f5c6c6; }
+    #timer-display {
+      font-size: 3rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 2px;
+      color: #111;
+      line-height: 1;
+      margin-bottom: 12px;
+    }
+    #timer-display.finished { color: #c0392b; }
+    #timer-bar-wrap {
+      height: 6px;
+      background: #f0f0f0;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    #timer-bar {
+      height: 100%;
+      background: #FFD700;
+      border-radius: 3px;
+      transition: width 0.9s linear;
+      width: 100%;
+    }
+    #timer-bar.finishing { background: #e74c3c; }
   </style>
 </head>
 <body>
@@ -236,6 +308,18 @@
   <div id="no-competition" style="display:none">
     <p>Нет активного соревнования</p>
     <button class="btn-primary" id="btn-new2">+ Начать соревнование</button>
+  </div>
+
+  <!-- Блок таймера -->
+  <div id="timer-block">
+    <div class="timer-label">Таймер</div>
+    <div class="timer-btns">
+      <button class="btn-timer" id="btn-t250">250 с</button>
+      <button class="btn-timer" id="btn-t50">50 с</button>
+      <button class="btn-timer-stop" id="btn-tstop">■ Стоп</button>
+    </div>
+    <div id="timer-display">—</div>
+    <div id="timer-bar-wrap"><div id="timer-bar"></div></div>
   </div>
 
   <div id="scoring-section" style="display:none">
@@ -343,9 +427,12 @@ async function loadShooters() {
 
   document.getElementById('no-competition').style.display  = 'none';
   document.getElementById('scoring-section').style.display = 'block';
+  document.getElementById('timer-block').style.display     = 'block';
 
   renderScoring();
   renderRanking();
+  loadTimerState();
+  subscribeCompetitionUpdates();
 }
 
 // Заголовки серий: количество выстрелов в каждой серии
@@ -491,6 +578,135 @@ function renderRanking() {
 }
 
 // ── Навигация ─────────────────────────────────────────────
+// ── Таймер ───────────────────────────────────────────────
+let timerTick = null; // ID текущего setInterval
+
+// Загрузить состояние таймера из текущего соревнования
+function loadTimerState() {
+  if (!competition) return;
+  applyTimerState(competition);
+}
+
+// Применить состояние таймера из объекта competition
+function applyTimerState(comp) {
+  stopTimerTick(); // остановить старый tick перед перезапуском
+  if (comp.timer_active && comp.timer_started_at && comp.timer_duration) {
+    startTimerTick(new Date(comp.timer_started_at), comp.timer_duration);
+  } else {
+    const secs = comp.timer_duration ?? null;
+    renderTimerDisplay(secs !== null ? secs : null, secs, false);
+  }
+  syncTimerButtons(comp);
+}
+
+// Запустить таймер в БД и локально
+async function startTimer(duration) {
+  const now = new Date().toISOString();
+  const { data, error } = await db
+    .from('competitions')
+    .update({
+      timer_started_at: now,
+      timer_duration: duration,
+      timer_active: true
+    })
+    .eq('id', competition.id)
+    .select()
+    .single();
+  if (error) { showStatus('Ошибка таймера: ' + error.message, 'error'); return; }
+  competition = data;
+  applyTimerState(competition);
+}
+
+// Остановить таймер в БД
+async function stopTimer() {
+  // Вычисляем оставшееся время на момент нажатия Стоп
+  let remaining = null;
+  if (competition.timer_started_at && competition.timer_duration) {
+    const elapsed = (Date.now() - new Date(competition.timer_started_at)) / 1000;
+    remaining = Math.max(0, Math.ceil(competition.timer_duration - elapsed));
+  }
+  const { data, error } = await db
+    .from('competitions')
+    .update({ timer_active: false })
+    .eq('id', competition.id)
+    .select()
+    .single();
+  if (error) { showStatus('Ошибка стопа: ' + error.message, 'error'); return; }
+  competition = data;
+  stopTimerTick();
+  renderTimerDisplay(remaining, competition.timer_duration, false);
+  syncTimerButtons(competition);
+}
+
+// Локальный tick: пересчитывает остаток каждую секунду
+function startTimerTick(startedAt, duration) {
+  function tick() {
+    const elapsed  = (Date.now() - startedAt) / 1000;
+    const remaining = Math.max(0, duration - elapsed);
+    renderTimerDisplay(remaining, duration, true);
+    if (remaining <= 0) stopTimerTick();
+  }
+  tick();
+  timerTick = setInterval(tick, 500);
+}
+
+function stopTimerTick() {
+  if (timerTick) { clearInterval(timerTick); timerTick = null; }
+}
+
+// Отрисовать дисплей таймера
+function renderTimerDisplay(remaining, duration, running) {
+  const disp = document.getElementById('timer-display');
+  const bar  = document.getElementById('timer-bar');
+  if (remaining === null) {
+    disp.textContent = '—';
+    disp.className   = '';
+    bar.style.width  = '100%';
+    bar.className    = 'timer-bar';
+    return;
+  }
+  const secs  = Math.ceil(remaining);
+  const m     = Math.floor(secs / 60);
+  const s     = secs % 60;
+  disp.textContent = m + ':' + String(s).padStart(2, '0');
+  const pct   = duration > 0 ? (remaining / duration) * 100 : 0;
+  bar.style.width = pct.toFixed(1) + '%';
+  const done  = remaining <= 0;
+  disp.className   = done ? 'finished' : '';
+  bar.className    = (pct < 20 || done) ? 'finishing' : '';
+}
+
+// Синхронизация кнопок (подсвечивает активную)
+function syncTimerButtons(comp) {
+  document.getElementById('btn-t250').classList
+    .toggle('active', !!(comp.timer_active && comp.timer_duration === 250));
+  document.getElementById('btn-t50').classList
+    .toggle('active', !!(comp.timer_active && comp.timer_duration === 50));
+}
+
+// Подписка на UPDATE competitions (синхронизация между вкладками)
+function subscribeCompetitionUpdates() {
+  if (!competition) return;
+  db.channel('judge-comp-' + competition.id)
+    .on('postgres_changes', {
+      event: 'UPDATE',
+      schema: 'public',
+      table: 'competitions',
+      filter: `id=eq.${competition.id}`
+    }, ({ new: updated }) => {
+      competition = { ...competition, ...updated };
+      applyTimerState(competition);
+    })
+    .subscribe();
+}
+
+// Кнопки таймера
+document.getElementById('btn-t250').addEventListener('click', () => startTimer(250));
+document.getElementById('btn-t50').addEventListener('click',  () => startTimer(50));
+document.getElementById('btn-tstop').addEventListener('click', stopTimer);
+
+// ── Навигация ─────────────────────────────────────────
+
 function onKeyDown(e) {
   if (e.key === 'Enter') {
     e.preventDefault(); moveFocusVertical(e.target, +1); // Enter ↓ следующая строка

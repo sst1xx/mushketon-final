@@ -19,9 +19,12 @@ $$;
 -- ШАГ 2: Таблица соревнований
 -- ============================================================
 CREATE TABLE IF NOT EXISTS competitions (
-  id         uuid    DEFAULT gen_random_uuid() PRIMARY KEY,
-  date       date    NOT NULL DEFAULT CURRENT_DATE,
-  is_active  boolean NOT NULL DEFAULT true
+  id                 uuid    DEFAULT gen_random_uuid() PRIMARY KEY,
+  date               date    NOT NULL DEFAULT CURRENT_DATE,
+  is_active          boolean NOT NULL DEFAULT true,
+  timer_started_at   timestamptz,
+  timer_duration     integer,
+  timer_active       boolean NOT NULL DEFAULT false
 );
 
 -- ============================================================

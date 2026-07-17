@@ -28,8 +28,40 @@
       color: #555;
       font-size: 0.9rem;
       letter-spacing: 2px;
-      margin-bottom: 48px;
+      margin-bottom: 32px;
     }
+
+    /* ── Таймер (scoreboard) ───────────────────────────── */
+    #sb-timer {
+      display: none; /* показываем только когда таймер активен или остановлен с остатком */
+      max-width: 720px;
+      margin: 0 auto 40px;
+      text-align: center;
+    }
+    #sb-timer-display {
+      font-size: 5rem;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      letter-spacing: 4px;
+      color: #FFD700;
+      line-height: 1;
+      margin-bottom: 16px;
+    }
+    #sb-timer-display.finished { color: #e74c3c; }
+    #sb-timer-bar-wrap {
+      height: 5px;
+      background: #1a1a1a;
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    #sb-timer-bar {
+      height: 100%;
+      background: #FFD700;
+      border-radius: 3px;
+      transition: width 0.9s linear;
+      width: 100%;
+    }
+    #sb-timer-bar.finishing { background: #e74c3c; }
 
     table {
       width: 100%;
@@ -99,6 +131,12 @@
 
   <h1>Mushketon</h1>
   <div id="comp-date">—</div>
+
+  <!-- Таймер -->
+  <div id="sb-timer">
+    <div id="sb-timer-display">0:00</div>
+    <div id="sb-timer-bar-wrap"><div id="sb-timer-bar"></div></div>
+  </div>
 
   <table>
     <thead>
@@ -198,6 +236,7 @@
           { day: 'numeric', month: 'long', year: 'numeric' });
 
       await refreshShooters();
+      applyTimerState(comp);  // показать таймер сразу при загрузке
       subscribe(comp.id);
     }
 
@@ -256,12 +295,71 @@
           }
         });
 
-      // Если добавили новое соревнование — перезагрузить страницу
-      db.channel('competitions')
+      // Новое соревнование (INSERT) — перезагрузить страницу.
+      // Изменение соревнования (UPDATE) — обновить таймер.
+      db.channel('sb-competitions')
         .on('postgres_changes', {
           event: 'INSERT', schema: 'public', table: 'competitions'
         }, () => location.reload())
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'competitions',
+          filter: `id=eq.${compId}`
+        }, ({ new: updated }) => {
+          applyTimerState(updated);
+        })
         .subscribe();
+    }
+
+    // ── Таймер (scoreboard) ──────────────────────────────────
+    let sbTimerTick = null;
+
+    function applyTimerState(comp) {
+      stopSbTimerTick();
+      const block = document.getElementById('sb-timer');
+      if (!comp.timer_duration) { block.style.display = 'none'; return; }
+      block.style.display = 'block';
+      if (comp.timer_active && comp.timer_started_at) {
+        startSbTimerTick(new Date(comp.timer_started_at), comp.timer_duration);
+      } else {
+        // Таймер остановлен: показываем остаток
+        let remaining = comp.timer_duration;
+        if (comp.timer_started_at) {
+          const elapsed = (Date.now() - new Date(comp.timer_started_at)) / 1000;
+          remaining = Math.max(0, comp.timer_duration - elapsed);
+        }
+        renderSbTimer(remaining, comp.timer_duration);
+      }
+    }
+
+    function startSbTimerTick(startedAt, duration) {
+      function tick() {
+        const elapsed   = (Date.now() - startedAt) / 1000;
+        const remaining = Math.max(0, duration - elapsed);
+        renderSbTimer(remaining, duration);
+        if (remaining <= 0) stopSbTimerTick();
+      }
+      tick();
+      sbTimerTick = setInterval(tick, 500);
+    }
+
+    function stopSbTimerTick() {
+      if (sbTimerTick) { clearInterval(sbTimerTick); sbTimerTick = null; }
+    }
+
+    function renderSbTimer(remaining, duration) {
+      const disp = document.getElementById('sb-timer-display');
+      const bar  = document.getElementById('sb-timer-bar');
+      const secs = Math.ceil(remaining);
+      const m    = Math.floor(secs / 60);
+      const s    = secs % 60;
+      disp.textContent = m + ':' + String(s).padStart(2, '0');
+      const pct  = duration > 0 ? (remaining / duration) * 100 : 0;
+      bar.style.width  = pct.toFixed(1) + '%';
+      const done = remaining <= 0;
+      disp.className   = done ? 'finished' : '';
+      bar.className    = (pct < 20 || done) ? 'finishing' : '';
     }
 
     // Повторное подключение с задержкой (без спама)
