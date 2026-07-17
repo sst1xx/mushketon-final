@@ -17,6 +17,7 @@
 
 - Единый `config.js` в корне: ключи Supabase в одном месте (были в двух HTML)
 - `supabase_setup.sql` делает всё сразу: таблицы, RLS, GRANT, Realtime (убраны ручные шаги)
+- все SQL-скрипты собраны в папке `sql/`: `supabase_setup.sql`, `add-timer-fields.sql`, `rotate-token.sql`
 - `sql/rotate-token.sql` — готовый сниппет смены токена
 - Документация приведена к текущей модели (`shooters`, токен в URL, 4 пары / 8 человек)
 - scoreboard: авто-реконнект при обрыве связи + полноэкранный режим

@@ -48,6 +48,9 @@ mushketon-final/
 │   ├── setup.md            — первоначальная настройка
 │   ├── usage.md            — руководство пользователя
 │   └── changelog.md        — история изменений
-├── supabase_setup.sql       — SQL для первоначальной настройки
+├── sql/
+│   ├── supabase_setup.sql     — SQL для первоначальной настройки (с нуля)
+│   ├── add-timer-fields.sql   — миграция: добавить поля таймера на живую базу
+│   └── rotate-token.sql       — смена токена судьи
 └── README.md                — этот файл
 ```
