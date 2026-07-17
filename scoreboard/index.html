@@ -142,7 +142,7 @@
     <thead>
       <tr>
         <th>#</th>
-        <th>Пара</th>
+        <th id="th-ranking-name">Пара</th>
         <th class="right">Итого</th>
       </tr>
     </thead>
@@ -166,12 +166,36 @@
 
     let localShooters = [];
     let currentCompId = null;
+    let currentCompType = 'pairs';
     let shootersChannel = null;
     let reconnectTimer = null;
 
-    // ── Подсчёт пар ───────────────────────────────────────────
-    // Пара = щит 1+2, щит 3+4, щит 5+6 и т.д. (до 10 пар = 20 щитов)
-    function buildRanking(shooters) {
+    function seriesCountFor(type) { return type === 'final' ? 9 : 6; }
+
+    function sumSeries(shooter, count) {
+      let sum = 0, any = false;
+      for (let i = 1; i <= count; i++) {
+        const v = shooter['s' + i];
+        if (v != null) { sum += parseFloat(v); any = true; }
+      }
+      return any ? Math.round(sum * 10) / 10 : null;
+    }
+
+    // ── Подсчёт рейтинга ────────────────────────────────────────
+    // Пары (тип 'pairs'): щит 1+2, щит 3+4, щит 5+6 и т.д. (до 10 пар = 20 щитов)
+    // Финал (тип 'final'): 1 стрелок = 1 строка, без группировки
+    function buildRanking(shooters, type) {
+      const count = seriesCountFor(type);
+
+      if (type === 'final') {
+        return shooters
+          .map(s => ({
+            names: s.name,
+            total: sumSeries(s, count) ?? 0
+          }))
+          .sort((a, b) => b.total - a.total);
+      }
+
       const byPair = {};
       for (const s of shooters) {
         const pairIdx = Math.floor((s.target - 1) / 2);
@@ -181,14 +205,8 @@
       return Object.entries(byPair)
         .map(([pairIdx, members]) => {
           members.sort((a, b) => a.target - b.target);
-          const memberSums = members.map(m => {
-            let sum = 0, any = false;
-            for (const v of [m.s1, m.s2, m.s3, m.s4, m.s5, m.s6]) {
-              if (v != null) { sum += parseFloat(v); any = true; }
-            }
-            return any ? Math.round(sum * 10) / 10 : null;
-          });
-          const total = memberSums.reduce((a, v) => a + (v != null ? v : 0), 0);
+          const memberSums = members.map(m => sumSeries(m, count));
+          const total = memberSums.reduce((a, v) => a + (v ?? 0), 0);
           const names = members
             .map((m, i) => memberSums[i] != null ? `${m.name} (${memberSums[i].toFixed(1)})` : m.name)
             .join(' / ');
@@ -203,7 +221,7 @@
 
     // ── Рендер ────────────────────────────────────────────────
     function render() {
-      const pairs = buildRanking(localShooters);
+      const pairs = buildRanking(localShooters, currentCompType);
       const tbody = document.getElementById('tbody');
 
       if (pairs.length === 0) {
@@ -236,7 +254,11 @@
 
       if (!comps?.length) return;
       const comp = comps[0];
-      currentCompId = comp.id;
+      currentCompId   = comp.id;
+      currentCompType = comp.type || 'pairs';
+
+      const th = document.getElementById('th-ranking-name');
+      if (th) th.textContent = currentCompType === 'final' ? 'Имя' : 'Пара';
 
       document.getElementById('comp-date').textContent =
         new Date(comp.date + 'T00:00:00').toLocaleDateString('ru-RU',

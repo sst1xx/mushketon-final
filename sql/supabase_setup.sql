@@ -16,12 +16,17 @@ AS $$
 $$;
 
 -- ============================================================
--- ШАГ 2: Таблица соревнований
+-- ШАГ 2: Таблица соревнований (пересоздаётся с нуля — старые
+-- данные не сохраняются, это подтверждено пользователем)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS competitions (
+DROP TABLE IF EXISTS shooters CASCADE;
+DROP TABLE IF EXISTS competitions CASCADE;
+
+CREATE TABLE competitions (
   id                 uuid    DEFAULT gen_random_uuid() PRIMARY KEY,
   date               date    NOT NULL DEFAULT CURRENT_DATE,
   is_active          boolean NOT NULL DEFAULT true,
+  type               text    NOT NULL DEFAULT 'pairs' CHECK (type IN ('pairs','final')),
   timer_started_at   timestamptz,
   timer_duration     integer,
   timer_active       boolean NOT NULL DEFAULT false
@@ -30,10 +35,11 @@ CREATE TABLE IF NOT EXISTS competitions (
 -- ============================================================
 -- ШАГ 3: Таблица участников + результаты серий
 -- Каждая строка = один стрелок
--- Пара = две строки с одинаковым target (номером щита)
--- s1..s6 = суммы серий (вводит судья)
+-- type = 'pairs': пара = две строки с одинаковым target (номером щита), s1..s6
+-- type = 'final': 1 строка = 1 стрелок, position всегда 1, s1..s9
+-- (s1,s2 = серии по 5, s3..s9 = раунды по 2 выстрела)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS shooters (
+CREATE TABLE shooters (
   id             uuid    DEFAULT gen_random_uuid() PRIMARY KEY,
   competition_id uuid    REFERENCES competitions(id) ON DELETE CASCADE,
   target         integer NOT NULL,
@@ -44,7 +50,10 @@ CREATE TABLE IF NOT EXISTS shooters (
   s3             decimal,
   s4             decimal,
   s5             decimal,
-  s6             decimal
+  s6             decimal,
+  s7             decimal,
+  s8             decimal,
+  s9             decimal
 );
 
 -- ============================================================

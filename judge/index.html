@@ -67,6 +67,21 @@
     }
     #modal h2 { margin-bottom: 16px; font-size: 1.05rem; }
 
+    #type-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+    .type-tab {
+      flex: 1;
+      background: #f0f0f0;
+      color: #666;
+      padding: 8px 10px;
+      font-size: 0.82rem;
+      border-radius: 6px;
+    }
+    .type-tab.active { background: #111; color: #FFD700; }
+
     #setup-table {
       width: 100%;
       border-collapse: collapse;
@@ -285,6 +300,10 @@
 <div id="modal-overlay">
   <div id="modal">
     <h2>Участники соревнования</h2>
+    <div id="type-tabs">
+      <button class="type-tab" id="tab-pairs" data-type="pairs">Пары</button>
+      <button class="type-tab active" id="tab-final" data-type="final">Индивидуальный финал</button>
+    </div>
     <table id="setup-table">
       <thead>
         <tr>
@@ -339,7 +358,7 @@
       <thead>
         <tr style="color:#aaa; font-size:0.75rem; text-transform:uppercase; letter-spacing:1px;">
           <th style="padding:4px 12px 8px 0; text-align:left; width:28px">#</th>
-          <th style="padding:4px 12px 8px 0; text-align:left">Пара</th>
+          <th id="th-ranking-name" style="padding:4px 12px 8px 0; text-align:left">Пара</th>
           <th style="padding:4px 0 8px; text-align:right">Итого</th>
         </tr>
       </thead>
@@ -431,22 +450,39 @@ async function loadShooters() {
 
   renderScoring();
   renderRanking();
+  updateRankingHeader();
   loadTimerState();
   subscribeCompetitionUpdates();
 }
 
-// Заголовки серий: количество выстрелов в каждой серии
-const SERIES_LABELS = ['5','5','5','3','3','3'];
-const SERIES_COUNT  = 6;
+function updateRankingHeader() {
+  const th = document.getElementById('th-ranking-name');
+  if (th) th.textContent = competition?.type === 'final' ? 'Имя' : 'Пара';
+}
+
+// Заголовки серий: количество выстрелов в каждой серии/раунде
+// зависит от типа соревнования — вычитывается каждый раз
+
+function seriesLabels() {
+  return competition?.type === 'final'
+    ? ['5','5','2','2','2','2','2','2','2']
+    : ['5','5','5','3','3','3'];
+}
+function seriesCount() { return seriesLabels().length; }
 
 // ── Таблица результатов ───────────────────────────────────
 // Пары: щит 1+2, щит 3+4, щит 5+6 ... до щит 19+20
+// Финал: 1 стрелок = 1 строка, без группировки/разделителей
 function renderScoring() {
+  const isFinal = competition?.type === 'final';
+  const labels  = seriesLabels();
+  const count   = seriesCount();
+
   const head = document.getElementById('scoring-head');
   head.innerHTML =
     '<th class="left" style="width:52px">Щит</th>' +
     '<th class="left">Фамилия</th>';
-  SERIES_LABELS.forEach(label => head.innerHTML += `<th>${label}</th>`);
+  labels.forEach(label => head.innerHTML += `<th>${label}</th>`);
   head.innerHTML += '<th>Σ</th>';
 
   const sorted = [...shooters].sort((a, b) => a.target - b.target);
@@ -454,11 +490,11 @@ function renderScoring() {
   tbody.innerHTML = '';
 
   sorted.forEach((shooter, idx) => {
-    // Разделитель перед нечётным щитом (кроме первого)
-    if (idx > 0 && shooter.target % 2 === 1) {
+    // Разделитель перед нечётным щитом (кроме первого) — только для пар
+    if (!isFinal && idx > 0 && shooter.target % 2 === 1) {
       const sep = tbody.insertRow();
       sep.className = 'pair-sep';
-      sep.insertCell().colSpan = 2 + SERIES_COUNT + 1;
+      sep.insertCell().colSpan = 2 + count + 1;
     }
 
     const tr = tbody.insertRow();
@@ -472,7 +508,7 @@ function renderScoring() {
     tdN.className = 'td-name';
     tdN.innerHTML = `<span>${esc(shooter.name)}</span>`;
 
-    for (let i = 1; i <= SERIES_COUNT; i++) {
+    for (let i = 1; i <= count; i++) {
       const key = 's' + i;
       const val = shooter[key];
       const td  = tr.insertCell();
@@ -498,13 +534,18 @@ function renderScoring() {
   });
 }
 
-function calcTotal(s) {
+function sumSeries(shooter, count) {
   let sum = 0, any = false;
-  for (let i = 1; i <= 6; i++) {
-    const v = s['s' + i];
+  for (let i = 1; i <= count; i++) {
+    const v = shooter['s' + i];
     if (v != null) { sum += parseFloat(v); any = true; }
   }
-  return any ? (Math.round(sum * 10) / 10).toFixed(1) : null;
+  return any ? Math.round(sum * 10) / 10 : null;
+}
+
+function calcTotal(s) {
+  const total = sumSeries(s, seriesCount());
+  return total != null ? total.toFixed(1) : null;
 }
 
 // ── Ячейки ────────────────────────────────────────────────
@@ -543,6 +584,17 @@ async function saveCell(id, key, value) {
 
 // ── Рейтинг (одни данные shooters, без дублирования) ────────────
 function buildRanking() {
+  const count = seriesCount();
+
+  if (competition?.type === 'final') {
+    return shooters
+      .map(s => ({
+        names: s.name,
+        total: sumSeries(s, count) ?? 0
+      }))
+      .sort((a, b) => b.total - a.total);
+  }
+
   const byPair = {};
   for (const s of shooters) {
     const idx = Math.floor((s.target - 1) / 2);
@@ -552,10 +604,7 @@ function buildRanking() {
   return Object.values(byPair)
     .map(members => {
       members.sort((a, b) => a.target - b.target);
-      const total = members.reduce((sum, m) => {
-        return sum + [m.s1, m.s2, m.s3, m.s4, m.s5, m.s6]
-          .reduce((a, v) => a + (v != null ? parseFloat(v) : 0), 0);
-      }, 0);
+      const total = members.reduce((sum, m) => sum + (sumSeries(m, count) ?? 0), 0);
       const names = members.map(m => m.name).join(' / ');
       return {
         names,
@@ -743,7 +792,7 @@ function moveFocusEnter(inp) {
   if (next) { inp.blur(); next.focus(); next.select(); return; }
 
   const n     = parseInt(key.slice(1), 10);
-  const nextKey = n < SERIES_COUNT ? 's' + (n + 1) : null;
+  const nextKey = n < seriesCount() ? 's' + (n + 1) : null;
   const nextCol = nextKey ? allInputs().filter(x => x.dataset.key === nextKey) : [];
   if (nextCol[0]) { inp.blur(); nextCol[0].focus(); nextCol[0].select(); return; }
 
@@ -757,21 +806,35 @@ function showStatus(msg, cls) {
 }
 
 // ── Модал: ввод участников ────────────────────────────────
-// 10 пар = 20 щитов. Пара: щит 1+2, щит 3+4, ...
+// Пары: 4 пары = 8 щитов, разделители через 2 строки.
+// Финал: 8 стрелков без разделителей, без слова «Пара».
+let selectedType = 'final';
+
 function openSetupModal() {
+  selectedType = 'final';
+  syncTypeTabs();
+  renderSetupRows();
+  document.getElementById('modal-overlay').classList.add('visible');
+  document.getElementById('setup-body').querySelector('input[data-col="name"]').focus();
+}
+
+function syncTypeTabs() {
+  document.getElementById('tab-pairs').classList.toggle('active', selectedType === 'pairs');
+  document.getElementById('tab-final').classList.toggle('active', selectedType === 'final');
+}
+
+function renderSetupRows() {
   const tbody = document.getElementById('setup-body');
   tbody.innerHTML = '';
-  for (let i = 0; i < 8; i++) addSetupRow(i); // всегда 4 пары
-  document.getElementById('modal-overlay').classList.add('visible');
-  tbody.querySelector('input[data-col="name"]').focus();
+  for (let i = 0; i < 8; i++) addSetupRow(i);
 }
 
 function addSetupRow(idx) {
   const tbody     = document.getElementById('setup-body');
   const targetNum = idx + 1;
 
-  // Разделитель между парами
-  if (idx > 0 && idx % 2 === 0) {
+  // Разделитель между парами — только для типа «pairs»
+  if (selectedType === 'pairs' && idx > 0 && idx % 2 === 0) {
     const sep = tbody.insertRow();
     sep.className = 'sep';
     sep.insertCell().colSpan = 2;
@@ -801,6 +864,17 @@ function addSetupRow(idx) {
   });
 }
 
+document.getElementById('tab-pairs').addEventListener('click', () => {
+  selectedType = 'pairs';
+  syncTypeTabs();
+  renderSetupRows();
+});
+document.getElementById('tab-final').addEventListener('click', () => {
+  selectedType = 'final';
+  syncTypeTabs();
+  renderSetupRows();
+});
+
 document.getElementById('btn-new').addEventListener('click', openSetupModal);
 document.getElementById('btn-new2').addEventListener('click', openSetupModal);
 document.getElementById('btn-cancel-setup').addEventListener('click', () =>
@@ -823,7 +897,7 @@ document.getElementById('btn-start').addEventListener('click', async () => {
 
   const { data: comp, error: ce } = await db
     .from('competitions')
-    .insert({ date: new Date().toISOString().slice(0, 10), is_active: true })
+    .insert({ date: new Date().toISOString().slice(0, 10), is_active: true, type: selectedType })
     .select().single();
 
   if (ce) { alert('Ошибка: ' + ce.message); btn.disabled = false; btn.textContent = 'Старт →'; return; }
