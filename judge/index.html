@@ -552,12 +552,19 @@ function buildRanking() {
   return Object.values(byPair)
     .map(members => {
       members.sort((a, b) => a.target - b.target);
-      const total = members.reduce((sum, m) => {
-        return sum + [m.s1,m.s2,m.s3,m.s4,m.s5,m.s6]
-          .reduce((a, v) => a + (v != null ? parseFloat(v) : 0), 0);
-      }, 0);
+      const memberSums = members.map(m => {
+        let sum = 0, any = false;
+        for (const v of [m.s1, m.s2, m.s3, m.s4, m.s5, m.s6]) {
+          if (v != null) { sum += parseFloat(v); any = true; }
+        }
+        return any ? Math.round(sum * 10) / 10 : null;
+      });
+      const total = memberSums.reduce((a, v) => a + (v != null ? v : 0), 0);
+      const names = members
+        .map((m, i) => memberSums[i] != null ? `${m.name} (${memberSums[i].toFixed(1)})` : m.name)
+        .join(' / ');
       return {
-        names: members.map(m => m.name).join(' / '),
+        names,
         total: Math.round(total * 10) / 10
       };
     })
