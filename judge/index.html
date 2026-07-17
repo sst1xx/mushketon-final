@@ -593,8 +593,7 @@ function applyTimerState(comp) {
   if (comp.timer_active && comp.timer_started_at && comp.timer_duration) {
     startTimerTick(new Date(comp.timer_started_at), comp.timer_duration);
   } else {
-    const secs = comp.timer_duration ?? null;
-    renderTimerDisplay(secs !== null ? secs : null, secs, false);
+    renderTimerDisplay(null, null, false);
   }
   syncTimerButtons(comp);
 }
@@ -617,24 +616,18 @@ async function startTimer(duration) {
   applyTimerState(competition);
 }
 
-// Остановить таймер в БД
+// Остановить и сбросить таймер в БД (для всех клиентов)
 async function stopTimer() {
-  // Вычисляем оставшееся время на момент нажатия Стоп
-  let remaining = null;
-  if (competition.timer_started_at && competition.timer_duration) {
-    const elapsed = (Date.now() - new Date(competition.timer_started_at)) / 1000;
-    remaining = Math.max(0, Math.ceil(competition.timer_duration - elapsed));
-  }
   const { data, error } = await db
     .from('competitions')
-    .update({ timer_active: false })
+    .update({ timer_active: false, timer_started_at: null, timer_duration: null })
     .eq('id', competition.id)
     .select()
     .single();
   if (error) { showStatus('Ошибка стопа: ' + error.message, 'error'); return; }
   competition = data;
   stopTimerTick();
-  renderTimerDisplay(remaining, competition.timer_duration, false);
+  renderTimerDisplay(null, null, false);
   syncTimerButtons(competition);
 }
 

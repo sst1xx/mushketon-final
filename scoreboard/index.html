@@ -318,19 +318,12 @@
     function applyTimerState(comp) {
       stopSbTimerTick();
       const block = document.getElementById('sb-timer');
-      if (!comp.timer_duration) { block.style.display = 'none'; return; }
-      block.style.display = 'block';
-      if (comp.timer_active && comp.timer_started_at) {
-        startSbTimerTick(new Date(comp.timer_started_at), comp.timer_duration);
-      } else {
-        // Таймер остановлен: показываем остаток
-        let remaining = comp.timer_duration;
-        if (comp.timer_started_at) {
-          const elapsed = (Date.now() - new Date(comp.timer_started_at)) / 1000;
-          remaining = Math.max(0, comp.timer_duration - elapsed);
-        }
-        renderSbTimer(remaining, comp.timer_duration);
+      if (!comp.timer_active || !comp.timer_started_at || !comp.timer_duration) {
+        block.style.display = 'none';
+        return;
       }
+      block.style.display = 'block';
+      startSbTimerTick(new Date(comp.timer_started_at), comp.timer_duration);
     }
 
     function startSbTimerTick(startedAt, duration) {
