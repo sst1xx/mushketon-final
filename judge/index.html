@@ -291,10 +291,7 @@
   <button class="btn-primary" id="btn-new" style="display:none">+ Новое соревнование</button>
 </header>
 
-<div id="blocked" style="display:none">
-  <h2>🔒 Доступ закрыт</h2>
-  <p>Откройте страницу по ссылке судьи (со знаком ?token= в адресе)</p>
-</div>
+
 
 <!-- Модал: список участников -->
 <div id="modal-overlay">
@@ -380,12 +377,8 @@ const { createClient } = supabase;
 // ── Токен из URL ─────────────────────────────────────────
 const token = new URLSearchParams(location.search).get('token');
 
-if (!token) {
-  document.getElementById('blocked').style.display = 'flex';
-  document.querySelector('header').style.display = 'none';
-  document.getElementById('main').style.display = 'none';
-  throw new Error('No token');
-}
+// Токен может отсутствовать — страница открывается, но все запросы к БД
+// будут отклонены Supabase RLS без валидного токена.
 
 const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
   global: { headers: { 'x-judge-token': token } }
