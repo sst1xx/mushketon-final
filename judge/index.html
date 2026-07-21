@@ -561,8 +561,14 @@ async function onBlur(e) {
 
 async function saveCell(id, key, value) {
   showStatus('Сохранение...', 'saving');
-  const { error } = await db.from('shooters').update({ [key]: value }).eq('id', id);
+  // .select() возвращает реально обновлённые строки. Без валидного
+  // токена RLS отсекает строку — вернётся пустой массив без error.
+  const { data, error } = await db.from('shooters').update({ [key]: value }).eq('id', id).select();
   if (error) { showStatus('Ошибка: ' + error.message, 'error'); return; }
+  if (!data || data.length === 0) {
+    showStatus('Не сохранено — нет прав (проверьте ссылку с токеном)', 'error');
+    return;
+  }
 
   const s = shooters.find(x => x.id === id);
   if (s) {
